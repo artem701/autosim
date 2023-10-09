@@ -5,3 +5,6 @@ This project has a following goal: to create a software complex, including appli
 
 ## Kanban
 Project uses following kanban board: https://artdubrovskikh.kanbantool.com/b/995135
+
+## GitHub
+Project is maintained on GitHub: https://github.com/artem701/genalg
