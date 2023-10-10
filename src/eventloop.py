@@ -2,13 +2,16 @@
 from typing import Callable
 from dataclasses import dataclass
 
+
 class Event:
     def __init__(self, sender):
         self.sender = sender
 
+
 @dataclass
 class Listner:
     handle: Callable[[Event], list[Event]]
+
 
 class EventLoop:
 
@@ -18,10 +21,10 @@ class EventLoop:
 
     def subscribe(self, listner: Listner):
         self._listners.add(listner)
-    
+
     def put(self, event: Event):
         self._queue.put(event)
-    
+
     def iterate(self):
         q = list[Event]()
         for e in self._queue:
@@ -32,4 +35,3 @@ class EventLoop:
     def loop_until_empty(self):
         while len(self._queue) > 0:
             self.iterate()
-        

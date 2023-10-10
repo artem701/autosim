@@ -7,18 +7,19 @@ from typing import Callable
 
 OID = int
 
+
 @dataclass
 class EnvironmentInterface:
-    time: Callable[[], float]           = not_implemented
+    time: Callable[[], float] = not_implemented
     objects: Callable[[], list[Object]] = not_implemented
-    register: Callable[[Object], OID]   = not_implemented
+    register: Callable[[Object], OID] = not_implemented
 
 
 class Environment(EnvironmentInterface):
 
     DEFAULT_DT = 0.01
 
-    def __init__(self, dt = None):
+    def __init__(self, dt=None):
         self._dt = coalesce(dt, Environment.DEFAULT_DT)
         self._time = 0
         self._objects = dict[OID, Object]()
@@ -43,20 +44,18 @@ class Environment(EnvironmentInterface):
         self.next_oid += 1
         self._objects[oid] = object
         return oid
-    
+
     def create_object(self, cls: type, *args, **kwargs) -> Object:
-        object = cls(args, kwargs, env = self.interface())
+        object = cls(args, kwargs, env=self.interface())
         return object
 
-    def update(self, dt = None):
+    def update(self, dt=None):
         dt = coalesce(dt, self._dt)
-        
+
         # TODO parallel
         paths = {}
         for oid, object in self._objects.items():
             paths[oid] = Path(object.location(), object.update())
-
-        
 
         self._time += dt
         raise NotImplementedError

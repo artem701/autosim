@@ -15,7 +15,7 @@ class Object:
 
     def oid(self):
         return self.__oid
-    
+
     def location(self):
         return self.__location
 

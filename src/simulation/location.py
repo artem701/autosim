@@ -12,7 +12,7 @@ class Location:
 
     def x(self) -> float:
         raise NotImplementedError
-    
+
     def collides(self, dx: float, other: 'Path') -> bool:
         """Check if current point collides other moving point. Does not check if other collides current!
 
@@ -51,7 +51,7 @@ class Path:
 
     def bx(self):
         return self._b.x()
-    
+
     def collides(self, other: 'Path') -> bool:
         """Whether current path collides other. Does not check reverse!
 
@@ -69,7 +69,7 @@ class Line(Location):
     def __init__(self, x: float = 0):
         super().__init__()
         self._x = x
-    
+
     def moved(self, dx):
         return Line(self._x + dx)
 
@@ -81,6 +81,7 @@ class Line(Location):
         e = self._x + dx - other.bx()
         return (s < 0 and e > 0) or (e == 0 and s <= 0)
 
+
 class CircleSpace:
 
     def __init__(self, length: float):
@@ -89,8 +90,9 @@ class CircleSpace:
     def length(self):
         return self._length
 
+
 class Circle(Location):
-    
+
     def __init__(self, space: CircleSpace, x: float = 0):
         super().__init__()
 
@@ -106,7 +108,7 @@ class Circle(Location):
 
     def x(self) -> float:
         return self._x
-    
+
     def collides(self, dx: float, other: 'Path') -> bool:
         x = self._x
 
