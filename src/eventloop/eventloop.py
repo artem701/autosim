@@ -1,5 +1,7 @@
 from helpers import remove_by_identity
 from helpers import coalesce
+import logging
+from enum import Enum, auto
 
 
 class Event:
@@ -42,6 +44,14 @@ class AddListener(Event):
         self.listener = listener
 
 
+class RemoveListener(Event):
+    """Service event, needed to create new listneres by current listeners.
+    """
+
+    def __init__(self, listener: Listener):
+        self.listener = listener
+
+
 class Terminate(Event):
     """Terminate Event Loop.
     """
@@ -63,9 +73,13 @@ class EventLoop(Listener):
     EventsQueue = list[Event]
     EventsMap = dict[type(Event), ListenersQueue]
 
+    class _ListnerAction(Enum):
+        ADD = auto()
+        REMOVE = auto()
+
     def __init__(self):
         self._listners = EventLoop.ListenersSet()
-        self._added_listeners = EventLoop.ListenersQueue()
+        self._listners_actions = []
         self._queue = EventLoop.EventsQueue()
         self._map = EventLoop.EventsMap()
 
@@ -75,17 +89,20 @@ class EventLoop(Listener):
         self.subscribe(self)
 
     def inputEvents(self) -> set[type(Event)]:
-        return {Terminate, AddListener}
+        return {Terminate, AddListener, RemoveListener}
 
     def accept(self, event: Event) -> list[Event]:
         if isinstance(event, AddListener):
-            self._added_listeners.append(event.listener)
-        elif isinstance(event, Terminate):
+            self._listners_actions.append(
+                (event.listener, EventLoop._ListnerAction.ADD))
+
+        if isinstance(event, RemoveListener):
+            self._listners_actions.append(
+                (event.listener, EventLoop._ListnerAction.REMOVE))
+
+        if isinstance(event, Terminate):
             self._terminate_flag = True
             self._terminate_immediate_flag = self._terminate_immediate_flag or event.immediate
-        else:
-            # Shall not reach
-            raise Exception(f"Unhandeled event {str(type(event))}")
 
     def subscribe(self, listener: Listener):
         for l in self._listners:
@@ -119,14 +136,27 @@ class EventLoop(Listener):
         """
         next_queue = EventLoop.EventsQueue()
         self._queue = EventLoop.EventsQueue([Iteration()]) + self._queue
+        # Dispatch events
         for e in self._queue:
+            ls = self._map.setdefault(type(e), [])
+            if len(ls) == 0:
+                logging.warning(f"Unhandeled event {type(e)}")
             for l in self._map.setdefault(type(e), []):
                 for ev in coalesce(l.accept(e), []):
                     ev.sender = l
                     next_queue.append(ev)
                 if self._terminate_immediate_flag:
                     return
+        # Use new queue
         self._queue = next_queue
+        # Handle listners changes
+        for la in self._listners_actions:
+            if la == EventLoop._ListnerAction.ADD:
+                self.subscribe(l)
+            elif la == EventLoop._ListnerAction.REMOVE:
+                self.unsubscribe(l)
+            else:
+                raise ValueError(f"Unhandeled listner action {la}")
 
     def loop(self):
         while not self._terminate_flag:

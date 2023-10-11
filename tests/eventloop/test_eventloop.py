@@ -1,5 +1,6 @@
 
-from eventloop import EventLoop, Event, Listener, Iteration, Terminate
+from eventloop import EventLoop, Event, Listener
+from eventloop.events import Iteration, Terminate
 import pytest
 
 
