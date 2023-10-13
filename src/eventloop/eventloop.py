@@ -128,36 +128,53 @@ class EventLoop(Listener):
         """
         self._queue.append(event)
 
-    def iterate(self) -> bool:
-        """Make a single Event Loop interation.
-
-        Returns:
-            bool: Termination indicator.
-        """
-        next_queue = EventLoop.EventsQueue()
-        self._queue = EventLoop.EventsQueue([Iteration()]) + self._queue
-        # Dispatch events
-        for e in self._queue:
-            ls = self._map.setdefault(type(e), [])
-            if len(ls) == 0:
-                logging.warning(f"Unhandeled event {type(e)}")
-            for l in self._map.setdefault(type(e), []):
-                for ev in coalesce(l.accept(e), []):
-                    ev.sender = l
-                    next_queue.append(ev)
-                if self._terminate_immediate_flag:
-                    return
-        # Use new queue
-        self._queue = next_queue
-        # Handle listners changes
-        for la in self._listners_actions:
-            if la == EventLoop._ListnerAction.ADD:
-                self.subscribe(l)
-            elif la == EventLoop._ListnerAction.REMOVE:
-                self.unsubscribe(l)
-            else:
-                raise ValueError(f"Unhandeled listner action {la}")
-
     def loop(self):
         while not self._terminate_flag:
             self.iterate()
+
+    def iterate(self):
+        """Make a single Event Loop interation.
+        """
+        self._queue = EventLoop.EventsQueue([Iteration()]) + self._queue
+        while not self._terminate_immediate_flag and len(self._queue) > 0:
+            self._queue = self._handle_events()
+        self._handle_listeners_actions()
+
+    def _handle_events(self) -> EventsQueue:
+        """Handle available events in the queue. Return queue with new events.
+        """
+        new_events = EventLoop.EventsQueue()
+        for e in self._queue:
+            new_events += self._handle_event(e)
+            if self._terminate_immediate_flag:
+                break
+        return new_events
+    
+    def _handle_event(self, event) -> EventsQueue:
+        """Handle one event. Return produced events.
+        """
+        new_events = EventLoop.EventsQueue()
+        listeners = self._map.setdefault(type(event), [])
+
+        if len(listeners) == 0:
+            logging.warning(f"Unhandeled event {type(event)}")
+
+        # For each listner which accepts this event
+        for l in listeners:
+            for ev in coalesce(l.accept(event), EventLoop.EventsQueue()):
+                ev.sender = l
+                new_events.append(ev)
+            if self._terminate_immediate_flag:
+                break
+        
+        return new_events
+
+    def _handle_listeners_actions(self):
+        for listener, action in self._listners_actions:
+            if action == EventLoop._ListnerAction.ADD:
+                self.subscribe(listener)
+            elif action == EventLoop._ListnerAction.REMOVE:
+                self.unsubscribe(listener)
+            else:
+                raise ValueError(f"Unhandeled listner action {action.name}")
+

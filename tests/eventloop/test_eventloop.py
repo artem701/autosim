@@ -15,9 +15,9 @@ class Terminator(Listener):
     def accept(self, event):
         assert isinstance(event, Iteration)
         product = None
-        if self.countdown == 1:
-            product = {Terminate(self.immediate)}
         self.countdown -= 1
+        if self.countdown == 0:
+            product = {Terminate(self.immediate)}
         return product
 
 
@@ -35,7 +35,7 @@ def test_terminate(countdown, immediate):
     loop = EventLoop()
     loop.subscribe(terminator)
     loop.loop()
-    assert terminator.countdown == -1
+    assert terminator.countdown == 0
 
 
 class Loopback(Event):
