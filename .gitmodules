@@ -1,0 +1,3 @@
+[submodule "src/rich-bench"]
+	path = src/rich-bench
+	url = https://github.com/artem701/rich-bench.git
