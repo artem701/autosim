@@ -1,1 +1,4 @@
+pyinstrument==4.6.0
 pytest==7.4.2
+pytest-timeout
+rich==13.6.0

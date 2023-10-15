@@ -42,4 +42,4 @@ Project uses following kanban board: https://artdubrovskikh.kanbantool.com/b/995
 Project is maintained on GitHub: https://github.com/artem701/genalg
 
 ## Benchmarks
-![](doc/benchmark)
+Benchmarks can be found [here](doc/benchmark.md).                                                        
