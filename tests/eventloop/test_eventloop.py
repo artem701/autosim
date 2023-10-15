@@ -9,7 +9,7 @@ class Terminator(Listener):
         self.countdown = countdown
         self.immediate = immediate
 
-    def inputEvents(self):
+    def input_events(self):
         return {Iteration}
 
     def accept(self, event):
@@ -46,7 +46,7 @@ class Watcher(Listener):
     def __init__(self):
         self.count = 0
 
-    def inputEvents(self):
+    def input_events(self):
         return {Iteration, Loopback}
 
     def accept(self, event):

@@ -1,5 +1,6 @@
 
-from eventloop import Listener
+import logging
+from eventloop import  EventLoop, Listener, Event
 from eventloop.events import Iteration, RemoveListener
 from timer.events import Tick
 from time import time
@@ -7,7 +8,7 @@ from math import floor
 
 
 class Timer(Listener):
-    def __init__(self, timeout: float, oneshot: bool = True, accumulate = None):
+    def __init__(self, timeout: float, oneshot: bool = True, accumulate = None, event: type(Event) = Tick, ctx=None):
         if accumulate is None:
             accumulate = not oneshot
         if accumulate and oneshot:
@@ -16,23 +17,29 @@ class Timer(Listener):
         self.timeout = timeout
         self.oneshot = oneshot
         self.accumulate = accumulate
+        self.event = event
+        self.ctx = ctx
         self._start = time()
-        self._active = False
+        self._active = True
         self._set_when()
 
-    def inputEvents(self):
+    def input_events(self):
         return {Iteration}
 
     def accept(self, event):
-        product = set()
+        assert isinstance(event, Iteration)
+        product = EventLoop.EventsQueue()
         t = time()
+        logging.debug(f"active: {self._active}, time: {t}, when: {self._when}")
         if self._active and t >= self._when:
             ticks = floor((t - self._when) /
                           self.timeout) if self.accumulate else 1
-            product.add([Tick()] * ticks)
+            production = self.event(
+                self.ctx) if self.ctx is not None else self.event()
+            product += [production] * ticks
             if self.oneshot:
                 self._active = False
-                product.add(RemoveListener(self))
+                product += [RemoveListener(self)]
             else:
                 self._set_when()
         return product

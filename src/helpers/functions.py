@@ -16,3 +16,13 @@ def remove_by_identity(list: list, element):
             list.pop(i)
             return True
     return False
+
+
+def to_array(arg):
+    if arg is None:
+        return []
+    if isinstance(arg, set):
+        return list(arg)
+    if not isinstance(arg, list):
+        return [arg]
+    return arg
