@@ -1,11 +1,12 @@
 
 from eventloop import EventLoop, Listener, Event
 from eventloop.events import Terminate, AddListener
-from timer.timer import Timer
+from timer import Timer
 from timer.events import Tick
 from time import time
 import logging
 import pytest
+
 
 class StartTimer(Event):
     pass
@@ -25,16 +26,17 @@ class Watcher(Listener):
         if isinstance(event, StartTimer):
             self.start = time()
             timer = Timer(self.timeout)
-            logging.info(f"Register timer. Current time: {self.start:10f}, timer ring: {timer._when}")
+            logging.info(
+                f"Register timer. Current time: {self.start:10f}, timer ring: {timer._when}")
             return AddListener(timer)
-        
+
         assert isinstance(event, Tick)
         assert self.start is not None
 
         self.end = time()
         self.time = self.end - self.start
         return Terminate(True)
-        
+
 
 @pytest.mark.timeout(1.0)
 @pytest.mark.parametrize('timeout', [
