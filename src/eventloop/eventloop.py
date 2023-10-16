@@ -1,7 +1,6 @@
-from helpers import coalesce, remove_by_identity, to_array
+from helpers import remove_by_identity, to_array
 import logging
 from enum import Enum, auto
-
 
 
 class Event:
@@ -113,7 +112,7 @@ class EventLoop(Listener):
 
         input_events = to_array(listener.input_events())
         if len(input_events) == 0:
-                raise RuntimeError(f"{listener} has no iput events!")
+            raise RuntimeError(f"{listener} has no iput events!")
 
         self._listners.add(listener)
         for evt in input_events:

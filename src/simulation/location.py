@@ -1,5 +1,6 @@
 
 from math import ceil, floor
+from helpers import not_implemented
 
 
 class Location:
@@ -7,12 +8,15 @@ class Location:
     def __init__(self):
         pass
 
+    @not_implemented
     def moved(self, dx: float) -> 'Location':
-        raise NotImplementedError
+        pass
 
+    @not_implemented
     def x(self) -> float:
-        raise NotImplementedError
+        pass
 
+    @not_implemented
     def collides(self, dx: float, other: 'Path') -> bool:
         """Check if current point collides other moving point. Does not check if other collides current!
 
@@ -23,7 +27,7 @@ class Location:
         Returns:
             bool: Whether current point collides other during transition.
         """
-        raise NotImplementedError
+        pass
 
 
 class Path:

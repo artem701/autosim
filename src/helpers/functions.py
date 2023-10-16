@@ -6,8 +6,10 @@ def coalesce(*args):
     return None
 
 
-def not_implemented():
-    raise NotImplementedError
+def not_implemented(func):
+    def wrapper(*args, **kwargs):
+        raise NotImplementedError
+    return wrapper
 
 
 def remove_by_identity(list: list, element):

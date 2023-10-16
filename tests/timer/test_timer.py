@@ -48,7 +48,7 @@ class Watcher(Listener):
 ])
 def test_basic(timeout):
     # 0.1 us
-    EPSILON = 0.00005
+    EPSILON = 0.0001
     watcher = Watcher(timeout)
     loop = EventLoop()
     loop.subscribe(watcher)

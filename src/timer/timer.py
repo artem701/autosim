@@ -1,6 +1,6 @@
 
 import logging
-from eventloop import  EventLoop, Listener, Event
+from eventloop import EventLoop, Listener, Event
 from eventloop.events import Iteration, RemoveListener
 from timer.events import Tick
 from time import time
@@ -8,7 +8,7 @@ from math import floor
 
 
 class Timer(Listener):
-    def __init__(self, timeout: float, oneshot: bool = True, accumulate = None, event: type(Event) = Tick, ctx=None):
+    def __init__(self, timeout: float, oneshot: bool = True, accumulate=None, event: type(Event) = Tick, ctx=None):
         if accumulate is None:
             accumulate = not oneshot
         if accumulate and oneshot:
