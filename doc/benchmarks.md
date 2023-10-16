@@ -2,10 +2,10 @@
                                                                                    
 | Module    |                             Benchmark | Min     | Max     | Mean    |
 |-----------|---------------------------------------|---------|---------|---------|
-| eventloop |          1'000 iterations, 1 listener | 0.033   | 0.035   | 0.034   |
-| eventloop |         10'000 iterations, 1 listener | 0.345   | 0.371   | 0.355   |
-| eventloop | 10'000 iterations time, 100 listeners | 2.440   | 2.593   | 2.512   |
+| eventloop |          1'000 iterations, 1 listener | 0.034   | 0.036   | 0.035   |
+| eventloop |         10'000 iterations, 1 listener | 0.341   | 0.354   | 0.347   |
+| eventloop | 10'000 iterations time, 100 listeners | 2.475   | 2.609   | 2.527   |
                                                                                    
 
-date MSK Mon Oct 16 16:52:00 UTC 2023
+date MSK Mon Oct 16 21:21:01 UTC 2023
 
