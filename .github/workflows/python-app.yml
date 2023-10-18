@@ -46,5 +46,5 @@ jobs:
         git config user.name github-actions
         git config user.email github-actions@github.com
         git add doc/benchmarks.md
-        git commit -m "benchmark"
+        git commit -m "update benchmark"
         git push
