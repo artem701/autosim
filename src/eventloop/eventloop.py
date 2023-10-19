@@ -134,8 +134,8 @@ class EventLoop(Listener):
         self._queue.append(event)
 
     def loop(self):
-        while not self._terminate_flag:
-            self.iterate()
+        while self.iterate():
+            pass
 
     def iterate(self):
         """Make a single Event Loop interation.
@@ -146,6 +146,7 @@ class EventLoop(Listener):
             self._queue = self._handle_events()
         self._handle_listeners_actions()
         logging.debug('= = =  ITERATION END  = = =')
+        return not self._terminate_flag
 
     def _handle_events(self) -> EventsQueue:
         """Handle available events in the queue. Return queue with new events.

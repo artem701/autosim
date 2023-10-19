@@ -45,5 +45,9 @@ class Timer(Listener):
         return product
 
     def _set_when(self):
-        self._when = self._start + \
-            floor((time() - self._start) / self.timeout + 1) * self.timeout
+        current_time = time()
+        if self.timeout == 0:
+            self._when = current_time
+        else:
+            self._when = self._start + \
+                floor((current_time - self._start) / self.timeout + 1) * self.timeout
