@@ -50,4 +50,5 @@ class Timer(Listener):
             self._when = current_time
         else:
             self._when = self._start + \
-                floor((current_time - self._start) / self.timeout + 1) * self.timeout
+                floor((current_time - self._start) /
+                      self.timeout + 1) * self.timeout

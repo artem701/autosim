@@ -1,5 +1,14 @@
 
-from autosim.car import Characteristics, Aerodynamics
+from dataclasses import dataclass
+
+
+@dataclass
+class Characteristics:
+    mass: float
+    thrust: float
+    front_area: float
+    streamlining: float
+
 
 LADA_GRANTA = Characteristics(
     mass=1100,

@@ -4,3 +4,5 @@ __pycache__
 genalg.code-workspace
 *.log
 *.pkl
+coverage
+.coverage

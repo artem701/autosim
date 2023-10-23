@@ -171,7 +171,11 @@ class EventLoop(Listener):
 
         # For each listner which accepts this event
         for l in listeners:
-            for ev in to_array(l.accept(event)):
+            evs = to_array(l.accept(event))
+            logging.debug(f"\t{l} responded with {evs}")
+            for ev in evs:
+                if isinstance(ev, type):
+                    ev = ev()
                 ev.sender = l
                 new_events.append(ev)
 

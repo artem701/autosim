@@ -1,19 +1,13 @@
 from dataclasses import dataclass
-from eventloop.eventloop import Event
+from eventloop.eventloop import Event, RemoveListener
 from simulation import Body
-from simulation.environment.events import Tick
+from simulation.location import Location, Line
+from simulation import Environment
+from simulation.environment.events import Tick, Collision
 from simulation.moveable.events import Move
 from helpers import not_implemented
 from simulation.math.rk2a import rk2a
 import autosim.car.specs as specs
-
-
-@dataclass
-class Characteristics:
-    mass: float
-    thrust: float
-    front_area: float
-    streamlining: float
 
 
 @dataclass
@@ -30,7 +24,8 @@ class Car(Body):
     g = 9.8
     F_BREAK = 0.8
 
-    def __init__(self, spec: specs.LADA_GRANTA, f: Friction = Friction.ASPHALT):
+    def __init__(self, location: Location = Line(0), spec: specs.Characteristics = specs.LADA_GRANTA, f: Friction = Friction.ASPHALT):
+        super().__init__(location=location, mass=spec.mass)
         if f >= Car.F_BREAK:
             raise ValueError(
                 f"f is expected to be less than f_break = {Car.F_BREAK}")
@@ -46,10 +41,15 @@ class Car(Body):
         self.v = 0
 
     def input_events(self) -> set:
-        return Tick
+        return [Tick, Collision]
 
     def accept(self, event: Event) -> list[Event]:
-        self.update(event)
+
+        if isinstance(event, Tick):
+            return self.update(event.environment)
+
+        if isinstance(event, Collision) and event.collider is self:
+            return self.on_collision(event)
 
     def accelerate(self, d: float, dt: float) -> Move:
         d_pos = d if d > 0 else 0
@@ -64,5 +64,8 @@ class Car(Body):
         return self.push(dt, force)
 
     @not_implemented
-    def update(self, tick: Tick):
+    def update(self, environment: Environment) -> Move:
         pass
+
+    def on_collision(self, collision: Collision):
+        return RemoveListener(self)

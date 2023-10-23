@@ -42,3 +42,6 @@ jobs:
     - name: Benchmark
       run: |
         ./bench.sh
+    - name: Coverage
+      run: |
+        ./coverage.sh report

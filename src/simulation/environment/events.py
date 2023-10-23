@@ -1,7 +1,5 @@
 
+from dataclasses import dataclass
 from eventloop import Event
-
-
-class Tick(Event):
-    def __init__(self, time):
-        self.time = time
+from simulation import Moveable
+from simulation.environment.environment import Tick, UpdateRequest, Collision

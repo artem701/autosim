@@ -26,8 +26,8 @@ class Watcher(Listener):
         if isinstance(event, StartTimer):
             self.start = time()
             timer = Timer(self.timeout)
-            logging.info(
-                f"Register timer. Current time: {self.start:10f}, timer ring: {timer._when}")
+            # logging.info(
+            #     f"Register timer. Current time: {self.start:10f}, timer ring: {timer._when}")
             return AddListener(timer)
 
         assert isinstance(event, Tick)
