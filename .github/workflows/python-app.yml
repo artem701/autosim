@@ -41,10 +41,4 @@ jobs:
         PYTHONPATH=src pytest
     - name: Benchmark
       run: |
-        ./bench.sh --markdown                     >  doc/benchmarks.md
-        echo -e \\ndate MSK `date -d '+3 hours'`\\n >> doc/benchmarks.md
-        git config user.name github-actions
-        git config user.email github-actions@github.com
-        git add doc/benchmarks.md
-        git commit -m "update benchmark"
-        git push
+        ./bench.sh
