@@ -1,4 +1,8 @@
+cexprtk==0.4.1
+jsonpickle==3.0.2
+numpy==1.25.2
+pygad==3.2.0
 pyinstrument==4.6.0
-pytest==7.4.2
 pytest-timeout
+pytest==7.4.2
 rich==13.6.0

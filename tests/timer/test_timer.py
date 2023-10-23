@@ -56,6 +56,7 @@ def test_basic(timeout):
     loop.loop()
     assert abs(watcher.time - timeout) < EPSILON
 
+
 def test_zero():
     watcher = Watcher(0)
     loop = EventLoop()
