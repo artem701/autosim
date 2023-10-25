@@ -3,10 +3,14 @@ from math import ceil, floor
 from helpers import not_implemented
 
 
+class Space:
+    pass
+
+
 class Location:
 
-    def __init__(self):
-        pass
+    def __init__(self, space: Space):
+        self.space = space
 
     @not_implemented
     def moved(self, dx: float) -> 'Location':
@@ -68,10 +72,14 @@ class Path:
         return self._a.collides(self._dx, other)
 
 
+class LineSpace:
+    pass
+
+
 class Line(Location):
 
     def __init__(self, x: float = 0):
-        super().__init__()
+        super().__init__(LineSpace())
         self._x = x
 
     def moved(self, dx):
@@ -98,17 +106,15 @@ class CircleSpace:
 class Circle(Location):
 
     def __init__(self, space: CircleSpace, x: float = 0):
-        super().__init__()
+        super().__init__(space)
 
         if x >= 0:
             self._x = x - space.length() * floor(x / space.length())
         else:
             self._x = x + space.length() * ceil(-x / space.length())
 
-        self._space = space
-
     def moved(self, dx: float):
-        return Circle(self._space, self._x + dx)
+        return Circle(self.space, self._x + dx)
 
     def x(self) -> float:
         return self._x
@@ -122,6 +128,6 @@ class Circle(Location):
             return True
 
         if x >= other.ax():
-            x = x - self._space.length()
+            x = x - self.space.length()
 
         return x + dx >= other.ax() + other.dx()
