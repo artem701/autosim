@@ -39,7 +39,7 @@ class Timer(Listener):
             product += [production] * ticks
             if self.oneshot:
                 self._active = False
-                product += [RemoveListener(self)]
+                product = product + [RemoveListener(self)]
             else:
                 self._set_when()
         return product

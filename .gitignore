@@ -6,3 +6,4 @@ genalg.code-workspace
 *.pkl
 coverage
 .coverage
+*.avi

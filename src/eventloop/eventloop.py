@@ -2,10 +2,12 @@ from helpers import remove_by_identity, to_array
 import logging
 from enum import Enum, auto
 
+from helpers.identityset import IdentitySet
+
 
 class Event:
-    def __init__(self):
-        self.sender = None
+    def __init__(self, sender=None):
+        self.sender = sender
 
 
 class Listener:
@@ -67,7 +69,7 @@ class Terminate(Event):
 
 class EventLoop(Listener):
 
-    ListenersSet = set[Listener]
+    ListenersSet = IdentitySet[Listener]
     ListenersQueue = list[Listener]
     EventsQueue = list[Event]
     EventsMap = dict[type(Event), ListenersQueue]
@@ -95,10 +97,12 @@ class EventLoop(Listener):
         if isinstance(event, AddListener):
             self._listners_actions.append(
                 (event.listener, EventLoop._ListnerAction.ADD))
+            self._handle_listeners_actions()
 
         if isinstance(event, RemoveListener):
             self._listners_actions.append(
                 (event.listener, EventLoop._ListnerAction.REMOVE))
+            self._handle_listeners_actions()
 
         if isinstance(event, Terminate):
             self._terminate_flag = True
@@ -141,7 +145,7 @@ class EventLoop(Listener):
         """Make a single Event Loop interation.
         """
         logging.debug('= = = ITERATION START = = =')
-        self._queue = EventLoop.EventsQueue([Iteration()]) + self._queue
+        self._queue = EventLoop.EventsQueue([Iteration(self)]) + self._queue
         while not self._terminate_immediate_flag and len(self._queue) > 0:
             self._queue = self._handle_events()
         self._handle_listeners_actions()
@@ -153,6 +157,9 @@ class EventLoop(Listener):
         """
         new_events = EventLoop.EventsQueue()
         for e in self._queue:
+            if e.sender is not None and e.sender not in self._listners:
+                continue
+
             new_events += self._handle_event(e)
             if self._terminate_immediate_flag:
                 break
