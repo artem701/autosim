@@ -18,7 +18,7 @@ from simulation.object import Object
 
 class Renderer(Listener):
 
-    def __init__(self, fps=24, width=1024, height=1024):
+    def __init__(self, fps=24, width=640, height=480):
         self.frames = list[Frame]()
         self.fps = fps
         self.frame_dt = 1 / fps
@@ -84,23 +84,23 @@ class Renderer(Listener):
     def capture_frame(self, environment: Environment):
         canvas = self.create_canvas()
 
-        if self.get_space() is None:
+        if self.get_space(environment) is None:
             return canvas
         
-        self.draw_space()
+        self.draw_space(environment, canvas)
         mapper = self.get_mapper(environment)
-        for obj in environment.objects:
+        for obj in environment.moveables:
             drawable = mapper.map(obj)
             if drawable.skip:
                 continue
-            cv2.circle(canvas, (drawable.x, drawable.y), 2, drawable.color, 1)
+            cv2.circle(canvas, (drawable.x, drawable.y), 5, drawable.color, cv2.FILLED)
             if drawable.name is not None:
                 cv2.putText(canvas, drawable.name, (drawable.x + 3, drawable.y - 3), cv2.FONT_HERSHEY_PLAIN, 0.1, (0,0,0))
         return canvas
 
 
     def create_canvas(self):
-        return np.full((self.height, self.width, 3), 255)
+        return np.full((self.height, self.width, 3), 255).astype(np.uint8)
 
     def get_space(self, environment: Environment):
         if self.space is None and len(environment.moveables) > 0:
@@ -140,20 +140,20 @@ class Renderer(Listener):
             x = object.location.x()
             l = space.length()
             angle = 2 * math.pi * x / l
-            return cx + math.cos(angle) * r, cy + math.sin(angle)
+            return int(round(cx + math.cos(angle) * r)), int(round(cy - math.sin(angle) * r))
         return map
 
     def circle(self, margin=10):
-        r = math.floor(min(self.width, self.height)) / 2 - margin
-        cx = math.floor(self.width / 2)
-        cy = math.floor(self.height / 2)
+        r = int(math.floor(min(self.width, self.height)) / 2 - margin)
+        cx = int(math.floor(self.width / 2))
+        cy = int(math.floor(self.height / 2))
         return cx, cy, r
 
     def none_mapper(self):
         return lambda _: Drawable(skip=True)
 
-    def draw_space(self, canvas):
-        space = self.get_space()
+    def draw_space(self, environment, canvas):
+        space = self.get_space(environment)
         if isinstance(space, LineSpace):
             self.draw_line(canvas)
 
