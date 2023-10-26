@@ -35,7 +35,6 @@ class Environment(Listener):
     def __init__(self, dt: float = None):
         self.dt = coalesce(dt, Environment.DEFAULT_DT)
         self.time = 0
-        self.objects = Environment.Objects()
         self.moveables = list[Moveable]()
         self._moves = {}
         self._first_update = True
@@ -59,8 +58,8 @@ class Environment(Listener):
             return self.handle_move(event)
 
         if isinstance(event, RemoveListener):
-            self.objects.remove(event.listener)
             remove_by_identity(self.moveables, event.listener)
+            return None
 
         raise RuntimeError(f"Unhandeled event: {event}")
 
@@ -74,6 +73,8 @@ class Environment(Listener):
     def detect_collision(self) -> list[Collision]:
         collisions = []
         N = len(self.moveables)
+        if N < 2:
+            return []
 
         def get_path(i) -> Path:
             return self._moves.setdefault(self.moveables[i], Path(self.moveables[i].location, 0))

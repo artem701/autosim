@@ -6,6 +6,7 @@ from simulation.moveable.events import Move
 
 class Moveable(Object):
     def __init__(self, location: Location):
+        super().__init__()
         self.location = location
 
     def move(self, dx: float) -> Move:

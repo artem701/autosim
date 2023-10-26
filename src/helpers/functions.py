@@ -30,11 +30,11 @@ def remove_by_identity(list: list, element):
 def to_array(arg):
     if arg is None:
         return []
-    if isinstance(arg, set):
+    
+    try:
         return list(arg)
-    if not isinstance(arg, list):
+    except:
         return [arg]
-    return arg
 
 
 def get_class_that_defined_method(meth):
