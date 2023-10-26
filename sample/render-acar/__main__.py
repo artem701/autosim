@@ -1,6 +1,6 @@
 
 from time import time
-from autosim.car import ACar
+from autosim.car import ACar, specs
 from eventloop import Event, EventLoop, Listener
 from eventloop.events import Terminate, Iteration
 from renderer import Renderer
@@ -44,13 +44,13 @@ class Watcher(Listener):
 loop = EventLoop()
 
 L = 500
-T = 20
+T = 60
 FPS = 24
-W = 1024
-H = 1024
+W = 768
+H = 768
 CARS = 10
 environment = Environment()
-cars = [ ACar(f"{50 / (i+1)} * dt", ACar.Mode.MOVEMENT, Circle(CircleSpace(L), -L // (i + 2))) for i in range(CARS) ]
+cars = [ ACar(f"{1 - 0.025 * i}", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -L // (i + 2)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS) ]
 renderer = Renderer(fps=FPS, width=W, height=H)
 watcher = Watcher(T)
 

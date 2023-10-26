@@ -16,3 +16,10 @@ LADA_GRANTA = Characteristics(
     front_area=2.25,
     streamlining=0.36
 )
+
+TEST = Characteristics(
+    mass=1000,
+    thrust=1000,
+    front_area=2.25,
+    streamlining=0.36
+)

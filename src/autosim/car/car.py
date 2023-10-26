@@ -24,8 +24,8 @@ class Car(Body):
     g = 9.8
     F_BREAK = 0.8
 
-    def __init__(self, location: Location = Line(0), spec: specs.Characteristics = specs.LADA_GRANTA, f: Friction = Friction.ASPHALT):
-        super().__init__(location=location, mass=spec.mass)
+    def __init__(self, location: Location = Line(0), spec: specs.Characteristics = specs.LADA_GRANTA, f: Friction = Friction.ASPHALT, name: str = None):
+        super().__init__(location=location, mass=spec.mass, name=name)
         if f >= Car.F_BREAK:
             raise ValueError(
                 f"f is expected to be less than f_break = {Car.F_BREAK}")
@@ -53,13 +53,13 @@ class Car(Body):
 
     def accelerate(self, d: float, dt: float) -> Move:
         d_pos = d if d > 0 else 0
-        d_neg = d if d < 0 else 0
+        d_neg = -d if d < 0 else 0
 
-        v = self.v
-
-        def force(t, x, v): return d_pos * self.spec.thrust \
-            - (self.__F_friction - d_neg * (self.__F_break_max - self.__F_friction)) \
-            - self.__K_air * (v ** 2)
+        def force(t, x, v):
+            result = d_pos * self.spec.thrust \
+                - (self.__F_friction + d_neg * (self.__F_break_max - self.__F_friction)) \
+                - self.__K_air * (v ** 2)
+            return result
 
         return self.push(dt, force)
 

@@ -32,7 +32,7 @@ def rk2a(f, x0, t):
     """
 
     n = len(t)
-    x = numpy.array([x0] * n)
+    x = numpy.array([x0] * n).astype(numpy.double)
     for i in range(n - 1):
         h = t[i+1] - t[i]
         k1 = h * f(x[i], t[i]) / 2.0
