@@ -15,6 +15,7 @@ from simulation.location import CircleSpace, LineSpace
 from simulation.moveable.moveable import Moveable
 from simulation.object import Object
 
+# TODO: major refactoring
 
 class Renderer(Listener):
 
@@ -95,7 +96,9 @@ class Renderer(Listener):
                 continue
             cv2.circle(canvas, (drawable.x, drawable.y), 5, drawable.color, cv2.FILLED)
             if drawable.name is not None:
-                cv2.putText(canvas, drawable.name, (drawable.x + 3, drawable.y - 3), cv2.FONT_HERSHEY_PLAIN, 0.1, (0,0,0))
+                cv2.putText(canvas, drawable.name, (drawable.x + 3, drawable.y - 3), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
+
+        cv2.putText(canvas, f"t = {environment.time:.2f} s", (1, 15), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
         return canvas
 
 
@@ -167,3 +170,4 @@ class Renderer(Listener):
     def draw_circle(self, canvas):
         cx, cy, r = self.circle()
         cv2.circle(canvas, (cx, cy), r, (0,0,0), 2)
+        cv2.putText(canvas, f"R = {r:.2f}m", (1, self.height - 2), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0))
