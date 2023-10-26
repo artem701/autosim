@@ -10,7 +10,7 @@ import numpy
 
 class Body(Moveable):
     def __init__(self, location: Location, mass: float, v: float = 0, name: str = None):
-        super().__init__(location, name = name)
+        super().__init__(location, name=name)
         self.mass = mass
         self.v = v
 

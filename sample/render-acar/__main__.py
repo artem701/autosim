@@ -15,6 +15,7 @@ import logging
 logging.getLogger().setLevel(logging.INFO)
 logging.info('initializing...')
 
+
 class Watcher(Listener):
     def __init__(self, timeout=25, logging_interval=1):
         self.timeout = timeout
@@ -24,7 +25,7 @@ class Watcher(Listener):
 
     def input_events(self) -> set:
         return Iteration, Tick, FrameRendered
-    
+
     def accept(self, event: Event) -> list[Event]:
         if isinstance(event, Iteration):
             self.iterations += 1
@@ -41,6 +42,7 @@ class Watcher(Listener):
         if isinstance(event, FrameRendered):
             pass
 
+
 loop = EventLoop()
 
 L = 500
@@ -50,7 +52,8 @@ W = 768
 H = 768
 CARS = 10
 environment = Environment()
-cars = [ ACar(f"{1 - 0.025 * i}", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -L // (i + 2)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS) ]
+cars = [ACar(f"{1 - 0.025 * i}", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -
+             L // (i + 2)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS)]
 renderer = Renderer(fps=FPS, width=W, height=H)
 watcher = Watcher(T)
 
@@ -72,4 +75,5 @@ renderer.render('output')
 end = time()
 render_time = end - start
 
-logging.info(f"Simulated {T}s ({FPS*T} {W}x{H} frames, {watcher.iterations} iterations) in {sim_time:.2f} real seconds, render for {render_time:.2f} seconds")
+logging.info(
+    f"Simulated {T}s ({FPS*T} {W}x{H} frames, {watcher.iterations} iterations) in {sim_time:.2f} real seconds, render for {render_time:.2f} seconds")

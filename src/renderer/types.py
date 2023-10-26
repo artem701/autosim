@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from renderer.frame import Frame
 
+
 @dataclass
 class Drawable:
     x: int

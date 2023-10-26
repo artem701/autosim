@@ -30,7 +30,7 @@ def remove_by_identity(list: list, element):
 def to_array(arg):
     if arg is None:
         return []
-    
+
     try:
         return list(arg)
     except:
