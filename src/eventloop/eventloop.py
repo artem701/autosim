@@ -178,7 +178,11 @@ class EventLoop(Listener):
 
         # For each listner which accepts this event
         for l in listeners:
-            evs = to_array(l.accept(event))
+            try:
+                evs = to_array(l.accept(event))
+            except Exception as exception:
+                raise RuntimeError(f"Exception during processing of event {event} by listener {l}") from exception
+
             logging.debug(f"\t{l} responded with {evs}")
             for ev in evs:
                 if isinstance(ev, type):

@@ -37,7 +37,8 @@ class Location:
 class Path:
 
     def __init__(self, a: Location, dx: float):
-        assert dx >= 0
+        if (dx < 0):
+            raise RuntimeError(f"Expected dx >= 0 (dx = {dx})")
         self._a = a
         self._b = a.moved(dx)
         self._dx = dx
