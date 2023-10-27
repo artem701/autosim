@@ -52,8 +52,12 @@ W = 768
 H = 768
 CARS = 10
 environment = Environment()
-cars = [ACar(f"{1 - 0.025 * i}", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -
-             L // (i + 2)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS)]
+# cars = [ACar(f"{1 - 0.025 * i}", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -
+#              L // (i + 2)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS)]
+# cars = [ACar(f"{1 - 0.05 * i}", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -
+#              i * (L // CARS)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS)]
+cars = [ACar(f"sin(2*pi*t/20 + {i/CARS}*2*pi) * 5", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -
+             i * (L // CARS)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS)]
 renderer = Renderer(fps=FPS, width=W, height=H)
 watcher = Watcher(T)
 
