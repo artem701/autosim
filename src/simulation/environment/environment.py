@@ -4,6 +4,7 @@ from eventloop.events import RemoveListener
 from helpers import IdentitySet, coalesce, not_implemented, remove_by_identity
 from eventloop import Listener, Event
 from simulation import Object, Moveable
+from simulation.body import Body
 from simulation.location import Path
 from simulation.moveable.events import Move
 
@@ -35,7 +36,7 @@ class Environment(Listener):
     def __init__(self, dt: float = None):
         self.dt = coalesce(dt, Environment.DEFAULT_DT)
         self.time = 0
-        self.moveables = list[Moveable]()
+        self.bodies = list[Body]()
         self._moves = {}
         self._first_update = True
 
@@ -54,30 +55,30 @@ class Environment(Listener):
             self._moves = {}
             return collisions + [Tick(self)]
 
-        if isinstance(event, Move):
+        if isinstance(event, Move) and isinstance(event.sender, Body):
             return self.handle_move(event)
 
         if isinstance(event, RemoveListener):
-            remove_by_identity(self.moveables, event.listener)
+            remove_by_identity(self.bodies, event.listener)
             return None
 
         raise RuntimeError(f"Unhandeled event: {event}")
 
     def handle_move(self, move: Move) -> Event | None:
-        if move.sender not in self.moveables:
-            self.moveables.append(move.sender)
-            self.moveables.sort(key=lambda moveable: moveable.location.x())
+        if move.sender not in self.bodies:
+            self.bodies.append(move.sender)
+            self.bodies.sort(key=lambda moveable: moveable.location.x())
         self._moves[move.sender] = Path(move.sender.location, move.dx)
         move.sender.location = move.sender.location.moved(move.dx)
 
     def detect_collision(self) -> list[Collision]:
         collisions = []
-        N = len(self.moveables)
+        N = len(self.bodies)
         if N < 2:
             return []
 
         def get_path(i) -> Path:
-            return self._moves.setdefault(self.moveables[i], Path(self.moveables[i].location, 0))
+            return self._moves.setdefault(self.bodies[i], Path(self.bodies[i].location, 0))
 
         for i in range(N):
             next_idx = (i + 1) % N
@@ -85,6 +86,6 @@ class Environment(Listener):
             next_path = get_path(next_idx)
             if current_path.collides(next_path):
                 collisions.append(
-                    Collision(self.moveables[i], self.moveables[next_idx], time=self.time))
+                    Collision(self.bodies[i], self.bodies[next_idx], time=self.time))
 
         return collisions

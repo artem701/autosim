@@ -56,8 +56,9 @@ class Car(Body):
         d_neg = -d if d < 0 else 0
 
         def force(t, x, v):
+            # TODO: ensure formula is right, fix if needed, check if "v * ..." is needed in friction section
             result = d_pos * self.spec.thrust \
-                - (self.__F_friction + d_neg * (self.__F_break_max - self.__F_friction)) \
+                - v * (self.__F_friction + d_neg * (self.__F_break_max - self.__F_friction)) \
                 - self.__K_air * (v ** 2)
             return result
 

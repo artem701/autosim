@@ -91,7 +91,7 @@ class Renderer(Listener):
 
         self.draw_space(environment, canvas)
         mapper = self.get_mapper(environment)
-        for obj in environment.moveables:
+        for obj in environment.bodies:
             drawable = mapper.map(obj)
             if drawable.skip:
                 continue
@@ -109,11 +109,11 @@ class Renderer(Listener):
         return np.full((self.height, self.width, 3), 255).astype(np.uint8)
 
     def get_space(self, environment: Environment):
-        if self.space is None and len(environment.moveables) > 0:
-            location = environment.moveables[0].location
+        if self.space is None and len(environment.bodies) > 0:
+            location = environment.bodies[0].location
             self.space = location.space
 
-        if len(environment.moveables) == 0:
+        if len(environment.bodies) == 0:
             return None
 
         return self.space

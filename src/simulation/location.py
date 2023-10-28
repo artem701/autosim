@@ -33,6 +33,10 @@ class Location:
         """
         pass
 
+    @not_implemented
+    def distance(self, other: 'Location') -> float:
+        pass
+
 
 class Path:
 
@@ -93,6 +97,9 @@ class Line(Location):
         s = self._x - other.ax()
         e = self._x + dx - other.bx()
         return (s < 0 and e > 0) or (e == 0 and s <= 0)
+    
+    def distance(self, other: Location) -> float:
+        return other.x() - self.x()
 
 
 class CircleSpace:
@@ -132,3 +139,9 @@ class Circle(Location):
             x = x - self.space.length()
 
         return x + dx >= other.ax() + other.dx()
+
+    def distance(self, other: 'Circle') -> float:
+        dx = other.x() - self.x()
+        if dx < 0:
+            dx += self.space.length()
+        return dx
