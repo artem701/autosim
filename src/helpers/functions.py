@@ -1,6 +1,7 @@
 
 import functools
 import inspect
+from typing import Any, Callable
 
 
 def coalesce(*args):
@@ -55,3 +56,16 @@ def get_class_that_defined_method(meth):
             return cls
     # handle special descriptor objects
     return getattr(meth, '__objclass__', None)
+
+
+def index_if(array: list, predicate: Callable[[Any], bool]):
+    i = 0
+    for element in array:
+        if predicate(element):
+            return i
+        i += 1
+    return None
+
+
+def bound(x, minimum, maximum):
+    return max(minimum, min(x, maximum))
