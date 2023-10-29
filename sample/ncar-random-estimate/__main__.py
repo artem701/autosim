@@ -40,6 +40,8 @@ class Watcher(Listener):
         if isinstance(event, FrameRendered):
             pass
 
+def kph2mps(kph):
+    return kph * 1000 / 3600
 
 L = 500
 T = 60
@@ -55,9 +57,13 @@ cars = [NCar(NeuralNetwork.random(ARCHITECTURE), Circle(CircleSpace(L), -
 renderer = Renderer(fps=FPS, width=W, height=H)
 watcher = Watcher(10)
 
-logging.info('simulating...')
+logging.info('estimating...')
 start = time()
-autosim.simulate(autosim.SimulationParameters(T, [*cars, renderer, watcher]))
+fitness = autosim.fitness(cars[0], autosim.SimulationParameters(T, [*cars, renderer, watcher]), autosim.Strategy(
+    collision=autosim.Criteria(1000),
+    speed=autosim.ReferenceCriteria(10, kph2mps(60)),
+    distance=autosim.ReferenceCriteria(10, 20)
+))
 end = time()
 sim_time = end - start
 
@@ -68,4 +74,4 @@ end = time()
 render_time = end - start
 
 logging.info(
-    f"Simulated {T}s ({FPS*T} {W}x{H} frames, {watcher.iterations} iterations) in {sim_time:.2f} real seconds, render for {render_time:.2f} seconds")
+    f"Simulated {T}s ({FPS*T} {W}x{H} frames, {watcher.iterations} iterations) in {sim_time:.2f} real seconds, render for {render_time:.2f} seconds, target fitness: {fitness}")
