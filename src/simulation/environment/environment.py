@@ -38,7 +38,7 @@ class Environment(Listener):
         self.time = 0
         self.bodies = list[Body]()
         self._moves = {}
-        self._first_update = True
+        self._updates = 0
 
     def input_events(self):
         return {UpdateRequest, Move, RemoveListener}
@@ -46,13 +46,11 @@ class Environment(Listener):
     def accept(self, event):
 
         if isinstance(event, UpdateRequest):
-
-            if not self._first_update:
-                self.time += self.dt
-            self._first_update = False
+            self.time = self._updates * self.dt
 
             collisions = self.detect_collision()
             self._moves = {}
+            self._updates += 1
             return collisions + [Tick(self)]
 
         if isinstance(event, Move) and isinstance(event.sender, Body):

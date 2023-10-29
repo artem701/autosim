@@ -114,7 +114,7 @@ class EventLoop(Listener):
             if l is listener:
                 raise RuntimeError(f"{listener} is already subscribed!")
 
-        input_events = to_array(listener.input_events())
+        input_events = set(to_array(listener.input_events()))
         if len(input_events) == 0:
             raise RuntimeError(f"{listener} has no iput events!")
 

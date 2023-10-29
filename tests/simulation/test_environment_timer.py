@@ -1,13 +1,13 @@
+
 from math import ceil
 from eventloop import EventLoop, Listener, Event
 from eventloop.eventloop import Iteration
 from eventloop.events import Terminate, AddListener
-from simulation.environment.environment import UpdateRequest, Tick as EnvTick
-from timer.timer import Timer
+from simulation.driver import Driver, Type
+from simulation.environment.environment import UpdateRequest
+from simulation.timer import Timer
 from timer.events import Tick
-from time import time
 from simulation import Environment
-from simulation.driver import Type as DriverType, Driver
 import pytest
 
 
@@ -40,29 +40,41 @@ class Watcher(Listener):
         self.time = self.end - self.start
         return Terminate(True)
 
-
-@pytest.mark.timeout(1.0)
-@pytest.mark.parametrize('timeout', [
-    (0.01),
-    (0.10),
-    (0.15),
-    (0.20),
-    (0.50),
+@pytest.mark.parametrize('timeout_dts', [
+    (0.0), (1.0), (2.0), (10.0),
+    (0.5), (1.5), (2.5), (10.5),
+    (0.1), (1.1), (2.1), (10.1),
+    (0.9), (1.9), (2.9), (10.9),
 ])
-def test_basic(timeout):
-    # 0.1 us
-    watcher = Watcher(timeout)
+@pytest.mark.timeout(1.0)
+def test(timeout_dts):
+    driver = Driver(Type.FAST)
+    environment = Environment()
+    watcher = Watcher(environment=environment, timeout=environment.dt*timeout_dts)
     loop = EventLoop()
+    loop.subscribe(driver)
+    loop.subscribe(environment)
     loop.subscribe(watcher)
     loop.put(StartTimer())
     loop.loop()
-    assert watcher.time > timeout
+    assert watcher.time == environment.dt * ceil(timeout_dts)
 
 
-def test_zero():
-    watcher = Watcher(0)
+@pytest.mark.parametrize('timeout_dts', [
+    (0.0), (1.0), (2.0), (10.0),
+    (0.5), (1.5), (2.5), (10.5),
+    (0.1), (1.1), (2.1), (10.1),
+    (0.9), (1.9), (2.9), (10.9),
+])
+@pytest.mark.timeout(1.0)
+def test_swap_subscribe(timeout_dts):
+    driver = Driver(Type.FAST)
+    environment = Environment()
+    watcher = Watcher(environment=environment, timeout=environment.dt*timeout_dts)
     loop = EventLoop()
+    loop.subscribe(driver)
     loop.subscribe(watcher)
+    loop.subscribe(environment)
     loop.put(StartTimer())
-    assert loop.iterate()
-    assert not loop.iterate()
+    loop.loop()
+    assert watcher.time == environment.dt * ceil(timeout_dts)
