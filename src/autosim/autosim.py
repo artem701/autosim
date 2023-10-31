@@ -11,7 +11,7 @@ def simulate(parameters: autosim.simulation.SimulationParameters):
     simulation.simulate()
 
 
-def fitness(target: autosim.car.Car, simulation_parameters: autosim.simulation.SimulationParameters, strategy: autosim.estimation.Strategy) -> float:
+def fitness(target: autosim.car.Car, simulation_parameters: autosim.simulation.SimulationParameters, strategy: autosim.estimation.EstimationStrategy) -> float:
     estimator = autosim.estimation.EstimatorObject(target=target, strategy=strategy)
 
     simulation_parameters = copy.copy(simulation_parameters)

@@ -37,7 +37,7 @@ class NeuralNetwork(Serializable):
         output_layer = input_layer
         
         for arch in architecture.dense_layers:
-            output_layer = pgnn.DenseLayer(arch.n, output_layer, arch.f.value)
+            output_layer = pgnn.DenseLayer(arch.n, output_layer, arch.f)
         
         return NeuralNetwork(output_layer)
     
@@ -46,3 +46,15 @@ class NeuralNetwork(Serializable):
 
     def predict(self, inputs: np.ndarray, problem_type: str = 'regression'):
         return self.predict_many(inputs=[inputs], problem_type=problem_type)[0]
+
+    def as_vector(self):
+        return pgnn.layers_weights_as_vector(self.output_layer)
+
+    def architecture(self) -> NetworkArchitecture:
+        layer = self.output_layer
+        layers = []
+        while isinstance(layer, pgnn.DenseLayer):
+            layers = [DenseLayerArchitecture(n=layer.num_neurons, f=layer.activation_function)] + layers
+            layer = layer.previous_layer
+        assert isinstance(layer, pgnn.InputLayer)
+        return NetworkArchitecture(InputLayerArchitecture(layer.num_neurons), layers)

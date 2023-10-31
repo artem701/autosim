@@ -19,7 +19,7 @@ class NetworkArchitecture(nn.NetworkArchitecture):
 class NeuralNetwork(nn.NeuralNetwork):
     def __init__(self, output_layer):
         super().__init__(output_layer)
-    
+
     @staticmethod
     def random(architecture: NetworkArchitecture):
         return NeuralNetwork(nn.NeuralNetwork.random(architecture).output_layer)

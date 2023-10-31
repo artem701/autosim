@@ -59,7 +59,7 @@ watcher = Watcher(10)
 
 logging.info('estimating...')
 start = time()
-fitness = autosim.fitness(cars[0], autosim.SimulationParameters(T, [*cars, renderer, watcher]), autosim.Strategy(
+fitness = autosim.fitness(cars[0], autosim.SimulationParameters(T, [*cars, renderer, watcher]), autosim.EstimationStrategy(
     collision=autosim.Criteria(1000),
     speed=autosim.ReferenceCriteria(10, kph2mps(60)),
     distance=autosim.ReferenceCriteria(10, 20)

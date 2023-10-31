@@ -23,13 +23,13 @@ class ReferenceCriteria(Criteria):
         return super().get_fine() * abs(value - self.reference)
 
 @dataclass
-class Strategy:
+class EstimationStrategy:
     collision: Criteria
     speed: ReferenceCriteria
     distance: ReferenceCriteria
 
 class EstimatorObject(eventloop.Listener):
-    def __init__(self, target: autosim.car.Car, strategy: Strategy):
+    def __init__(self, target: autosim.car.Car, strategy: EstimationStrategy):
         self.strategy = strategy
         self.target = target
         self.first = True
