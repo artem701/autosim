@@ -7,7 +7,7 @@ import simulation.environment.events
 import simulation.location
 
 from dataclasses import dataclass
-from eventloop.eventloop import Event
+from eventloop.eventloop import Event, Terminate
 from simulation.environment.events import Collision, Tick
 
 @dataclass
@@ -48,8 +48,12 @@ class EstimatorObject(eventloop.Listener):
                 self.fine += self.periodical_fine(env)
 
         if isinstance(event, Collision):
+            if event.collider is not self:
+                return
+
             assert not self.first
             self.fine += self.strategy.collision.get_fine()
+            return Terminate(immediate=False)
 
     def periodical_fine(self, env: simulation.Environment):
         if self.first:
@@ -72,8 +76,7 @@ class EstimatorObject(eventloop.Listener):
 
     def front(self, env: simulation.Environment) -> simulation.Body:
         # TODO: optimize. Can remember front and then recalc on add/remove listener.
-        if len(env.bodies) == 1:
-            return None
+        # consider implementation in Body class to use inside both estimation and decision.
 
         target_index = helpers.index_if(env.bodies, lambda body: body is self.target)
         if target_index is None:
@@ -81,4 +84,8 @@ class EstimatorObject(eventloop.Listener):
 
         front_index = (target_index + 1) % len(env.bodies)
         front = env.bodies[front_index]
+
+        if front is self.target:
+            return None
+        
         return front

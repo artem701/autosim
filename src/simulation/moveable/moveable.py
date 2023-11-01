@@ -1,6 +1,5 @@
 
-from simulation import Object
-from simulation import Location
+from simulation import Object, Location
 from simulation.moveable.events import Move
 
 
