@@ -2,6 +2,7 @@
 import autosim.car
 import autosim.estimation
 import autosim.simulation
+import autosim.training
 import copy
 import sys
 
@@ -28,3 +29,7 @@ def fitness(target: autosim.car.Car, simulation_parameters: autosim.simulation.S
     else:
         return 1 / estimator.fine
 
+def train(strategy: autosim.training.TrainingStrategy, population: autosim.training.Population):
+    """Train population. Does not provide apply any side effect.
+    """
+    return autosim.training.train(strategy=strategy, population=population)

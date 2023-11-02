@@ -35,5 +35,4 @@ def test_architecture_extraction(architecture, compare_against):
 ])
 def test_weights_extraction(architecture):
     network = NeuralNetwork.random(architecture=architecture)
-    logging.error(f"real weights = {network.as_vector()}, restores = {NeuralNetwork.from_vector(architecture=architecture, vector=network.as_vector()).as_vector()}")
     assert network == NeuralNetwork.from_vector(architecture=architecture, vector=network.as_vector())

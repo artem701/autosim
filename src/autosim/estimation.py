@@ -6,7 +6,7 @@ import helpers
 import simulation.environment.events
 import simulation.location
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from eventloop.eventloop import Event, Terminate
 from simulation.environment.events import Collision, Tick
 
@@ -24,9 +24,9 @@ class ReferenceCriteria(Criteria):
 
 @dataclass
 class EstimationStrategy:
-    collision: Criteria
-    speed: ReferenceCriteria
-    distance: ReferenceCriteria
+    collision: Criteria = field(default_factory=lambda:Criteria(0))
+    speed: ReferenceCriteria = field(default_factory=lambda:ReferenceCriteria(0, 0))
+    distance: ReferenceCriteria = field(default_factory=lambda:ReferenceCriteria(0, 0))
 
 class EstimatorObject(eventloop.Listener):
     def __init__(self, target: autosim.car.Car, strategy: EstimationStrategy):

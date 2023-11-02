@@ -16,17 +16,11 @@ class NetworkArchitecture(nn.NetworkArchitecture):
         output_layer = nn.DenseLayerArchitecture(n=len(OUTPUTS), f=output_activation)
         super().__init__(input_layer=input_layer, dense_layers=dense_layers+[output_layer])
 
-class NeuralNetwork(nn.NeuralNetwork):
-    def __init__(self, output_layer):
-        super().__init__(output_layer)
-
-    @staticmethod
-    def random(architecture: NetworkArchitecture):
-        return NeuralNetwork(nn.NeuralNetwork.random(architecture).output_layer)
+NeuralNetwork = nn.NeuralNetwork
 
 class NCar(Car):
 
-    def __init__(self, network: NeuralNetwork, location: Location = Line(0), spec: specs.Characteristics = specs.LADA_GRANTA, f: Friction = Friction.ASPHALT, name: str = None):
+    def __init__(self, network: NeuralNetwork, location: Location = Line(0), spec: specs.Characteristics = specs.TEST, f: Friction = Friction.ASPHALT, name: str = None):
         super().__init__(location=location, spec=spec, f=f, name=name)
         assert isinstance(network, NeuralNetwork)
         self.network = network
@@ -44,5 +38,5 @@ class NCar(Car):
         dx = front.location.x() - self.location.x()
         dv = front.v - self.v
         decision = self.network.predict([dx, dv, self.v])[0]
-        d = bound(decision, -1, 1)
+        d = bound(decision - 0.5, -1, 1)
         return self.accelerate(d, environment.dt)

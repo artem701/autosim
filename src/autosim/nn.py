@@ -42,12 +42,13 @@ class NeuralNetwork(Serializable):
         return a.shape == b.shape and (a == b).all()
     
     @staticmethod
-    def random(architecture: NetworkArchitecture) -> 'NeuralNetwork':
+    def random(architecture: NetworkArchitecture, bound: tuple[float, float] = (-0.5, 0.5)) -> 'NeuralNetwork':
         input_layer = pgnn.InputLayer(architecture.input_layer.n)
         output_layer = input_layer
         
         for arch in architecture.dense_layers:
             output_layer = pgnn.DenseLayer(arch.n, output_layer, arch.f.value)
+            output_layer.trained_weights = np.random.uniform(low=bound[0], high=bound[1], size=output_layer.trained_weights.size)
         
         return NeuralNetwork(output_layer)
     
@@ -69,7 +70,7 @@ class NeuralNetwork(Serializable):
         vector = []
         for layer in self.layers_reversed():
             if isinstance(layer, pgnn.DenseLayer):
-                vector = list(layer.trained_weights) + vector
+                vector = layer.trained_weights.flatten().tolist() + vector
         return np.array(vector)
     
     @staticmethod
@@ -78,10 +79,14 @@ class NeuralNetwork(Serializable):
         output_layer = input_layer
         weight_index = 0
         for arch in architecture.dense_layers:
-            assert weight_index + arch.n <= vector.shape[0]
+            previous_n = output_layer.num_neurons
+            assert weight_index + arch.n * previous_n <= vector.shape[0]
+
             output_layer = pgnn.DenseLayer(arch.n, output_layer, arch.f.value)
-            output_layer.trained_weights = vector[weight_index:weight_index + arch.n]
-            weight_index += arch.n
+            for i in range(previous_n):
+                output_layer.trained_weights[i,:] = vector[weight_index + arch.n * i : weight_index + arch.n * (i + 1)]
+
+            weight_index += arch.n * previous_n
         assert weight_index == vector.shape[0]
 
         network = NeuralNetwork(output_layer=output_layer)

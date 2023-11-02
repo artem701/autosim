@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from eventloop.eventloop import Event, RemoveListener
+from helpers.functions import to_array
 from simulation import Body
 from simulation.location import Location, Line
 from simulation import Environment
@@ -24,7 +25,7 @@ class Car(Body):
     g = 9.8
     F_BREAK = 0.8
 
-    def __init__(self, location: Location = Line(0), spec: specs.Characteristics = specs.LADA_GRANTA, f: Friction = Friction.ASPHALT, name: str = None):
+    def __init__(self, location: Location = Line(0), spec: specs.Characteristics = specs.TEST, f: Friction = Friction.ASPHALT, name: str = None):
         super().__init__(location=location, mass=spec.mass, name=name)
         if f >= Car.F_BREAK:
             raise ValueError(
@@ -41,15 +42,19 @@ class Car(Body):
         self.v = 0
 
     def input_events(self) -> set:
-        return [Tick, Collision]
+        return [Tick, Collision] # + to_array(Body.input_events())
 
     def accept(self, event: Event) -> list[Event]:
+        # product = to_array(super().accept(event))
+        product = []
 
         if isinstance(event, Tick):
-            return self.update(event.environment)
+            product += to_array(self.update(event.environment))
 
         if isinstance(event, Collision) and event.collider is self:
-            return self.on_collision(event)
+            product += to_array(self.on_collision(event))
+        
+        return product
 
     def accelerate(self, d: float, dt: float) -> Move:
         d_pos = d if d > 0 else 0
@@ -70,3 +75,6 @@ class Car(Body):
 
     def on_collision(self, collision: Collision):
         return RemoveListener(self)
+
+def kph_to_mps(kph: float) -> float:
+    return kph * 1000 / 3600
