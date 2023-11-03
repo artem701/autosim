@@ -1,3 +1,4 @@
+import sys
 from autosim.car import Car
 from autosim.car import specs, Friction
 from helpers import index_if, bound
@@ -32,11 +33,12 @@ class NCar(Car):
         if self_index is not None:
             front_index = (self_index + 1) % len(bodies)
             front = bodies[front_index]
+            dx = self.location.distance(front.location)
+            dv = front.v - self.v
         else:
             # TODO: something better? How to find front if you are not on the body list yet?
-            front = self
-        dx = front.location.x() - self.location.x()
-        dv = front.v - self.v
+            dx = sys.float_info.max
+            dv = sys.float_info.max
         decision = self.network.predict([dx, dv, self.v])[0]
-        d = bound(decision - 0.5, -1, 1)
+        d = bound(decision * 2 - 1, -1, 1)
         return self.accelerate(d, environment.dt)

@@ -14,6 +14,10 @@ class Cached(Generic[T]):
     def get(self, getter: Callable[[], T]):
         if not self.is_set:
             self.value = getter()
-            self.is_set = True
+            self.is_set = self.value is not None
         return self.value
+    
+    def unset(self):
+        self.is_set = False
+        self.value = None
         

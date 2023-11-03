@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 import enum
+from typing import Any, Generator
 import numpy as np
 import pygad.nn as pgnn
 from helpers import Serializable
@@ -58,7 +59,7 @@ class NeuralNetwork(Serializable):
     def predict(self, inputs: np.ndarray, problem_type: str = 'regression'):
         return self.predict_many(inputs=[inputs], problem_type=problem_type)[0]
 
-    def layers_reversed(self):
+    def layers_reversed(self) -> Generator[pgnn.DenseLayer | pgnn.InputLayer, Any, None]:
         layer = self.output_layer
         while isinstance(layer, pgnn.DenseLayer):
             yield layer

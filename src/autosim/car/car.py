@@ -75,6 +75,3 @@ class Car(Body):
 
     def on_collision(self, collision: Collision):
         return RemoveListener(self)
-
-def kph_to_mps(kph: float) -> float:
-    return kph * 1000 / 3600

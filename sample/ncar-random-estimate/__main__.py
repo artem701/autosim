@@ -6,6 +6,7 @@ from autosim.car.ncar import NCar, NeuralNetwork, NetworkArchitecture
 from autosim.nn import  DenseLayerArchitecture, ActivationFunction
 from eventloop import Event, EventLoop, Listener
 from eventloop.events import Iteration
+from helpers.functions import kph_to_mps
 from renderer import Renderer
 from renderer.events import FrameRendered
 from simulation import Environment
@@ -40,9 +41,6 @@ class Watcher(Listener):
         if isinstance(event, FrameRendered):
             pass
 
-def kph2mps(kph):
-    return kph * 1000 / 3600
-
 L = 500
 T = 60
 FPS = 24
@@ -61,7 +59,7 @@ logging.info('estimating...')
 start = time()
 fitness = autosim.fitness(cars[0], autosim.SimulationParameters(T, [*cars, renderer, watcher]), autosim.EstimationStrategy(
     collision=autosim.Criteria(1000),
-    speed=autosim.ReferenceCriteria(10, kph2mps(60)),
+    speed=autosim.ReferenceCriteria(10, kph_to_mps(60)),
     distance=autosim.ReferenceCriteria(10, 20)
 ))
 end = time()

@@ -69,3 +69,9 @@ def index_if(array: list, predicate: Callable[[Any], bool]):
 
 def bound(x, minimum, maximum):
     return max(minimum, min(x, maximum))
+
+def kph_to_mps(kph: float) -> float:
+    return kph * 1000 / 3600
+
+def mps_to_kph(mps: float) -> float:
+    return mps * 3600 / 1000

@@ -1,7 +1,7 @@
 
 import math
 from eventloop.eventloop import Event, Listener
-from helpers.functions import not_implemented
+from helpers.functions import mps_to_kph, not_implemented
 from renderer.frame import copy_frame
 from simulation.environment.environment import Environment
 from simulation.environment.events import Tick
@@ -49,7 +49,7 @@ class Renderer(Listener):
 
     def accept(self, event: Event) -> list[Event]:
         if isinstance(event, Tick):
-            return self.handle_tick(event.environment)
+            self.handle_tick(event.environment)
 
     def handle_tick(self, environment: Environment) -> list[FrameRendered]:
         frames_needed = 0
@@ -83,8 +83,17 @@ class Renderer(Listener):
         self.frames += frames
         return [FrameRendered(frame) for frame in frames]
 
-    def capture_frame(self, environment: Environment):
+    def capture_frame(self, environment: Environment) -> Frame:
         canvas = self.create_canvas()
+
+        text_duration = 5
+        text_mapper = [
+            # mps
+            lambda body, drawable: f"{drawable.name}: x={body.location.x():.2f} m, v={body.v:.2f} m/s",
+            # kph
+            lambda body, drawable: f"{drawable.name}: x={body.location.x():.2f} m, v={mps_to_kph(body.v):.2f} km/h",
+        ]
+        pick_text = lambda t: text_mapper[math.floor(t / text_duration) % len(text_mapper)]
 
         if self.get_space(environment) is None:
             return canvas
@@ -99,7 +108,10 @@ class Renderer(Listener):
             cv2.circle(canvas, (drawable.x, drawable.y),
                        R, drawable.color, cv2.FILLED)
             if drawable.name is not None:
-                self.print(canvas, drawable.x + math.ceil(R / 2), drawable.y - math.ceil(R / 2), drawable.name)
+                self.print(canvas,
+                           drawable.x + math.ceil(R / 2),
+                           drawable.y - math.ceil(R / 2),
+                           pick_text(environment.time)(obj, drawable))
 
         self.print(canvas, 1, 1, f"t = {environment.time:.2f} s")
         return canvas

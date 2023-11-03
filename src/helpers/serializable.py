@@ -15,7 +15,9 @@ class Serializable:
         obj = decode(json)
 
         if not isinstance(obj, cls):
-            raise RuntimeError(f"Expected type {cls}, got {type(obj)}")
+            raise TypeError(f"Expected type {cls}, got {type(obj)}")
+
+        return obj
 
     @classmethod
     def from_file(cls, path):

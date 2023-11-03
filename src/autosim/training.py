@@ -108,7 +108,7 @@ class TrainingSuite:
 
 class SuiteAggregationStrategy(Enum):
    SUM_FITNESSES = lambda fitnesses: sum(fitnesses)
-   SUM_FINES     = lambda fitnesses: sum([(1 / fitnesses if fitness > 0 else sys.float_info.max) for fitness in fitnesses])
+   SUM_FINES     = lambda fitnesses: 1 / sum([(1 / fitness if fitness > 0 else sys.float_info.max) for fitness in fitnesses])
 
 
 @dataclass
@@ -129,9 +129,9 @@ class Population(Serializable):
       return self.networks[0].architecture()
    
    @staticmethod
-   def random(n: int, architecture: NetworkArchitecture) -> 'Population':
+   def random(n: int, architecture: NetworkArchitecture, bound: tuple[float, float]) -> 'Population':
       assert n > 0
-      return Population(networks=[NeuralNetwork.random(architecture=architecture) for _ in range(n)])
+      return Population(networks=[NeuralNetwork.random(architecture=architecture, bound=bound) for _ in range(n)])
    
    def as_vectors(self) -> list[np.ndarray]:
       return [network.as_vector() for network in self.networks]
@@ -163,7 +163,7 @@ def make_fitness(context: TrainingContext):
       car = NCar(network=network, location=Line(0), spec=strategy.spec, f=strategy.friction)
       fitnesses = []
       for suite in strategy.suites:
-         fitnesses = [autosim.fitness(car, simulation_parameters=suite.simulation, strategy=suite.estimation)]
+         fitnesses += [autosim.fitness(car, simulation_parameters=suite.simulation, strategy=suite.estimation)]
       return strategy.aggregation(fitnesses)
    return fitness
 
