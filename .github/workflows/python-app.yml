@@ -44,4 +44,4 @@ jobs:
         ./bench.sh
     - name: Coverage
       run: |
-        ./coverage.sh report
+        ./coverage.sh report --format=markdown --sort=cover
