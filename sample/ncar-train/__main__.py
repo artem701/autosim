@@ -112,13 +112,13 @@ def simulate(network):
         c.NCar(network=network,
                name=f"student-{i}",
                location = Circle(CircleSpace(L), i * L / (CARS_TESTED + 1)))
-        for i in range(CARS_TESTED)] + [c.ACar(function='0.65',
+        for i in range(CARS_TESTED)] + [c.ACar(function=f"0.5 + 0.5 * sin(2 * pi * t / {10})",
                                         mode = c.ACar.Mode.ACCELERATION,
                                         location=Circle(CircleSpace(L), CARS_TESTED * L / (CARS_TESTED + 1)),
                                         name='automatic'), renderer]
         )
     autosim.simulate(parameters)
-    logging.info( f"Simulated {parameters.timeout}s ({FPS * parameters.timeout} {W}x{H} frames)")
+    logging.info( f"simulated {parameters.timeout}s ({FPS * parameters.timeout} {W}x{H} frames)")
     return renderer
 
 @measure_time
