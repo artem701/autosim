@@ -17,7 +17,7 @@ import logging
 
 SOLUTION_FILE = 'solution.json'
 L = 500
-T_TRAINING = 60
+T_TRAINING = 20
 ARCHITECTURE = NetworkArchitecture([DenseLayerArchitecture(4, ActivationFunction.SIGM)] * 1, ActivationFunction.SIGM)
 
 def measure_time(func, /, level=logging.INFO):
