@@ -53,9 +53,9 @@ def load():
 
 @measure_time
 def train():
-    POPULATION = 64
-    GENERATIONS = 100
-    PARENTS_MATING = 32
+    POPULATION = 16
+    GENERATIONS = 10
+    PARENTS_MATING = 8
     
     estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.ReferenceCriteria(1, 100))
 
