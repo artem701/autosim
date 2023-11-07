@@ -10,3 +10,6 @@ class Moveable(Object):
 
     def move(self, dx: float) -> Move:
         return Move(dx)
+    
+    def __str__(self):
+        return f"{self.location}"

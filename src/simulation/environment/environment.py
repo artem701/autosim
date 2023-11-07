@@ -1,12 +1,15 @@
 
 from dataclasses import dataclass
-from eventloop.events import RemoveListener
+from enum import Enum
+from eventloop.eventloop import Iteration
+from eventloop.events import AddListener, RemoveListener
 from helpers import IdentitySet, coalesce, not_implemented, remove_by_identity
-from eventloop import Listener, Event
+from eventloop import Listener, CallbackListener, Event, EventLoop
 from simulation import Object, Moveable
 from simulation.body import Body
 from simulation.location import Path
 from simulation.moveable.events import Move
+from bisect import insort
 
 
 @dataclass
@@ -18,6 +21,35 @@ class UpdateRequest(Event):
     pass
 
 
+
+class Driver(Listener):
+
+    class Type(Enum):
+        FAST = 'fast'
+        REALTIME = 'realtime'
+
+    def __init__(self, type: Type = Type.FAST):
+        if type == Driver.Type.FAST:
+            self.init_fast()
+        elif type == Driver.Type.REALTIME:
+            self.init_realtime()
+        else:
+            raise RuntimeError(f"Unknown driver type {type}")
+    
+    @not_implemented
+    def init_realtime(self):
+        pass
+
+    def init_fast(self):
+        self.handler = lambda _: UpdateRequest
+    
+    def input_events(self) -> set:
+        return Iteration
+
+    def accept(self, event: Event) -> list[Event]:
+        return self.handler(event)
+
+
 @dataclass
 class Collision(Event):
     # Who hit
@@ -26,24 +58,62 @@ class Collision(Event):
     collidee: Moveable
     time: float = None
 
-
-class Environment(Listener):
+class Environment:
 
     DEFAULT_DT = 0.01
+    INPUT_EVENTS = {UpdateRequest, Move, AddListener, RemoveListener}
 
+    # Unordered cache.
     Objects = IdentitySet[Object]
+    # Ordered.
+    Moveables = list[Moveable]
+    # Ordered.
+    Bodies = list[Moveable]
 
-    def __init__(self, dt: float = None):
+    def __init__(self, dt: float = None, driver: Driver = Driver(type = Driver.Type.FAST)):
+        # Environmental parameters.
         self.dt = coalesce(dt, Environment.DEFAULT_DT)
+
+        # Objects' cache.
+        self.objects = Environment.Objects()
+        self.moveables = Environment.Moveables()
+        self.bodies = Environment.Bodies()
+
+        # Number of updates already done.
+        # During each update objects are asked to calculate their state in the next point of time.
+        # Time is incremented when the next update starts.
         self.time = 0
-        self.bodies = list[Body]()
-        self._moves = {}
         self._updates = 0
+        self._moves = {}
+        self.loop = EventLoop()
+        self.loop.subscribe(CallbackListener(accept_callback=self._accept, input_events=Environment.INPUT_EVENTS))
+        self.loop.subscribe(driver)
+    
+    def _subscribe(self, listener: Listener):
+        self.loop.put(AddListener(listener))
 
-    def input_events(self):
-        return {UpdateRequest, Move, RemoveListener}
+    def subscribe(self, *listeners):
+        for listener in listeners:
+            self._subscribe(listener)
 
-    def accept(self, event):
+    def put(self, event):
+        self.loop.put(event=event)
+
+    def simulate(self):
+        self.loop.loop()
+
+    def _add_object(self, object):
+        self.objects.add(object)
+
+    def _add_moveable(self, object):
+        self._add_object(object)
+        insort(self.moveables, object, key=lambda obj: obj.location.x())
+
+    def _add_body(self, object):
+        self._add_moveable(object)
+        insort(self.bodies, object, key=lambda obj: obj.location.x())
+
+    def _accept(self, event):
 
         if isinstance(event, UpdateRequest):
             self.time = self._updates * self.dt
@@ -53,19 +123,36 @@ class Environment(Listener):
             self._updates += 1
             return collisions + [Tick(self)]
 
-        if isinstance(event, Move) and isinstance(event.sender, Body):
-            return self.handle_move(event)
+        if isinstance(event, AddListener):
+            if event.listener in self.objects:
+                return None
+
+            if isinstance(event.listener, Body):
+                self._add_body(event.listener)
+            elif isinstance(event.listener, Moveable):
+                self._add_moveable(event.listener)
+            elif isinstance(event.listener, Object):
+                self._add_object(event.listener)
+            else:
+                pass
+            
+            return None
 
         if isinstance(event, RemoveListener):
-            remove_by_identity(self.bodies, event.listener)
+            if event.listener in self.objects:
+                self.objects.remove(event.listener)
+                remove_by_identity(self.moveables, event.listener)
+                remove_by_identity(self.bodies, event.listener)
             return None
+
+        if isinstance(event, Move) and isinstance(event.sender, Body):
+            return self.handle_move(event)
 
         raise RuntimeError(f"Unhandeled event: {event}")
 
     def handle_move(self, move: Move) -> Event | None:
         if move.sender not in self.bodies:
-            self.bodies.append(move.sender)
-            self.bodies.sort(key=lambda moveable: moveable.location.x())
+            raise RuntimeError(f"Unregistered body moved: {move.sender}")
         self._moves[move.sender] = Path(move.sender.location, move.dx)
         move.sender.location = move.sender.location.moved(move.dx)
 
@@ -78,12 +165,13 @@ class Environment(Listener):
         def get_path(i) -> Path:
             return self._moves.setdefault(self.bodies[i], Path(self.bodies[i].location, 0))
 
+        current_path = get_path(0)
         for i in range(N):
             next_idx = (i + 1) % N
-            current_path = get_path(i)
             next_path = get_path(next_idx)
             if current_path.collides(next_path):
                 collisions.append(
                     Collision(self.bodies[i], self.bodies[next_idx], time=self.time))
+            current_path = next_path
 
         return collisions

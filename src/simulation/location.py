@@ -37,6 +37,8 @@ class Location:
     def distance(self, other: 'Location') -> float:
         pass
 
+    def __str__(self):
+        return f"Location({self.space}: {self.x()})"
 
 class Path:
 
@@ -78,8 +80,8 @@ class Path:
 
 
 class LineSpace:
-    pass
-
+    def __str__(self):
+        return 'LineSpace()'
 
 class Line(Location):
 
@@ -109,6 +111,9 @@ class CircleSpace:
 
     def length(self):
         return self._length
+
+    def __str__(self):
+        return f"CircleSpace({self._length})"
 
 
 class Circle(Location):

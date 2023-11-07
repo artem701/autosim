@@ -1,4 +1,5 @@
 
+from helpers import Cached, coalesce
 from simulation import Moveable
 from simulation import Location
 from simulation.math.rk2a import rk2a
@@ -52,4 +53,7 @@ class Body(Moveable):
     #             return self
     #         else:
     #             return environment.bodies[min_distance_index]
-    #     self._next.get(getter=getter)
+    #     next = self._next.get(getter=getter) 
+    #     if next is None:
+    #         self._next.is_set = False
+    #     return next

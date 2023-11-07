@@ -2,12 +2,9 @@ from math import ceil
 from eventloop import EventLoop, Listener, Event
 from eventloop.eventloop import Iteration
 from eventloop.events import Terminate, AddListener
-from simulation.environment.environment import UpdateRequest, Tick as EnvTick
 from timer.timer import Timer
 from timer.events import Tick
 from time import time
-from simulation import Environment
-from simulation.driver import Type as DriverType, Driver
 import pytest
 
 

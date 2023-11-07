@@ -1,6 +1,7 @@
 from helpers import remove_by_identity, to_array
 import logging
 from enum import Enum, auto
+from typing import Callable
 
 from helpers.identityset import IdentitySet
 
@@ -30,6 +31,16 @@ class Listener:
         """
         return None
 
+class CallbackListener(Listener):
+    def __init__(self, accept_callback: Callable[[Event], list[Event]], input_events: set[type(Event)]):
+        self.accept_callback = accept_callback
+        self._input_events = input_events
+        
+    def input_events(self) -> set:
+        return self._input_events
+    
+    def accept(self, event: Event) -> list[Event]:
+        return self.accept_callback(event)
 
 class Iteration(Event):
     """Service event, produced each loop iteration. Cannot be created by any objects but Event Loop.
@@ -135,6 +146,8 @@ class EventLoop(Listener):
     def put(self, event: Event):
         """Put event into queue. May use for environment preparation before run.
         """
+        if not hasattr(event, 'sender'):
+            event.sender = None
         self._queue.append(event)
 
     def loop(self):

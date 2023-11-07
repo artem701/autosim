@@ -29,7 +29,7 @@ class Watcher(Listener):
     def accept(self, event: Event) -> list[Event]:
         if isinstance(event, Iteration):
             self.iterations += 1
-            return UpdateRequest()
+            return None
 
         if isinstance(event, Tick):
             if self.logging_interval > 0 and event.environment.time - self.last_time >= self.logging_interval:
@@ -42,8 +42,6 @@ class Watcher(Listener):
         if isinstance(event, FrameRendered):
             pass
 
-
-loop = EventLoop()
 
 L = 500
 T = 60
@@ -61,15 +59,11 @@ cars = [ACar(f"sin(2*pi*t/20 + {i/CARS}*2*pi) * 5", ACar.Mode.ACCELERATION, Circ
 renderer = Renderer(fps=FPS, width=W, height=H)
 watcher = Watcher(T)
 
-loop.subscribe(environment)
-for car in cars:
-    loop.subscribe(car)
-loop.subscribe(renderer)
-loop.subscribe(watcher)
+environment.subscribe(*cars, renderer, watcher)
 
 logging.info('simulating...')
 start = time()
-loop.loop()
+environment.simulate()
 end = time()
 sim_time = end - start
 

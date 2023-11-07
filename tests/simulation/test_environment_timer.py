@@ -1,10 +1,8 @@
 
 from math import ceil
 from eventloop import EventLoop, Listener, Event
-from eventloop.eventloop import Iteration
 from eventloop.events import Terminate, AddListener
-from simulation.driver import Driver, Type
-from simulation.environment.environment import UpdateRequest
+from simulation import Driver
 from simulation.timer import Timer
 from timer.events import Tick
 from simulation import Environment
@@ -48,33 +46,10 @@ class Watcher(Listener):
 ])
 @pytest.mark.timeout(1.0)
 def test(timeout_dts):
-    driver = Driver(Type.FAST)
-    environment = Environment()
+    driver = Driver(Driver.Type.FAST)
+    environment = Environment(driver=driver)
     watcher = Watcher(environment=environment, timeout=environment.dt*timeout_dts)
-    loop = EventLoop()
-    loop.subscribe(driver)
-    loop.subscribe(environment)
-    loop.subscribe(watcher)
-    loop.put(StartTimer())
-    loop.loop()
-    assert watcher.time == environment.dt * ceil(timeout_dts)
-
-
-@pytest.mark.parametrize('timeout_dts', [
-    (0.0), (1.0), (2.0), (10.0),
-    (0.5), (1.5), (2.5), (10.5),
-    (0.1), (1.1), (2.1), (10.1),
-    (0.9), (1.9), (2.9), (10.9),
-])
-@pytest.mark.timeout(1.0)
-def test_swap_subscribe(timeout_dts):
-    driver = Driver(Type.FAST)
-    environment = Environment()
-    watcher = Watcher(environment=environment, timeout=environment.dt*timeout_dts)
-    loop = EventLoop()
-    loop.subscribe(driver)
-    loop.subscribe(watcher)
-    loop.subscribe(environment)
-    loop.put(StartTimer())
-    loop.loop()
+    environment.subscribe(watcher)
+    environment.put(StartTimer())
+    environment.simulate()
     assert watcher.time == environment.dt * ceil(timeout_dts)

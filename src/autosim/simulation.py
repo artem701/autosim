@@ -5,14 +5,13 @@ from helpers import not_implemented
 import eventloop
 import eventloop.events
 import simulation
-import simulation.driver
 
 @dataclass
 class SimulationParameters:
     timeout: float
     objects: list[eventloop.Listener] = field(default_factory=list)
     dt: float = simulation.Environment.DEFAULT_DT
-    driver: simulation.Driver = simulation.Driver(simulation.driver.Type.FAST)
+    driver: simulation.Driver = simulation.Driver(simulation.Driver.Type.FAST)
 
 class Simulation:
 
@@ -22,15 +21,9 @@ class Simulation:
     def simulate(self):
         p = self.parameters
 
-        loop = eventloop.EventLoop()
-        environment = simulation.Environment(dt=p.dt)
+        environment = simulation.Environment(dt=p.dt, driver=p.driver)
         terminator = simulation.Timer(environment=environment, timeout=p.timeout, event=eventloop.events.Terminate, kwargs={'immediate': False})
         terminator.start()
         
-        loop.subscribe(p.driver)
-        loop.subscribe(environment)
-        loop.subscribe(terminator)
-        for object in p.objects:
-            loop.subscribe(object)
-        
-        loop.loop()
+        environment.subscribe(terminator, *p.objects)
+        environment.simulate()

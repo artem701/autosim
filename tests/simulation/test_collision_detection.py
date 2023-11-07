@@ -2,11 +2,12 @@ import logging
 import pytest
 
 from autosim.car import ACar
-from eventloop.eventloop import Event, EventLoop, Terminate
+from eventloop.eventloop import Event, Terminate
 from eventloop.events import Iteration
+import simulation
 from simulation.location import Circle, CircleSpace, Line
 from simulation import Environment
-from simulation.environment.events import UpdateRequest, Tick, Collision
+from simulation.environment.events import Tick, Collision
 from simulation.object import Object
 
 
@@ -33,12 +34,9 @@ class Watcher(Object):
             logging.info(args)
 
     def input_events(self):
-        return [Iteration, Tick, Collision]
+        return [Tick, Collision]
 
     def accept(self, event: Event):
-
-        if isinstance(event, Iteration):
-            return UpdateRequest
 
         if isinstance(event, Tick):
             self.log(
@@ -56,14 +54,10 @@ class Watcher(Object):
 
 def simulate(carl, carr, sim_time):
 
-    loop = EventLoop()
-    environment = Environment()
+    environment = Environment(driver=simulation.Driver(type=simulation.Driver.Type.FAST))
     watcher = Watcher(carl, carr, sim_time, False)
-    loop.subscribe(environment)
-    loop.subscribe(watcher)
-    loop.subscribe(carr)
-    loop.subscribe(carl)
-    loop.loop()
+    environment.subscribe(watcher, carr, carl)
+    environment.simulate()
 
     assert (watcher.collider is None and watcher.collidee is None) or (
         watcher.collider is not watcher.collidee)
@@ -98,7 +92,7 @@ def perform_testing(carl, carr, sim_time, expected_collider):
         # TODO: 10.1 must be 10. This is workaround for floating precision. Need to fix.
         (0, 50,  50,  45, 10.1, 'l'),
         #                                                            ...in the middle of simulation.
-        (0, 90,  50,  45,  5, 'l'),
+        (0, 90,  50,  45,    5, 'l'),
 
         # Fast approach.
         (0, 10000, 50,  50, 10, 'l'),

@@ -3,13 +3,12 @@ from time import time
 import autosim
 from autosim.car import specs
 from autosim.car.ncar import NCar, NeuralNetwork, NetworkArchitecture
-from autosim.nn import  DenseLayerArchitecture, ActivationFunction
-from eventloop import Event, EventLoop, Listener
+from autosim.nn import  ActivationFunction
+from eventloop import Event, Listener
 from eventloop.events import Iteration
 from helpers.functions import kph_to_mps
 from renderer import Renderer
 from renderer.events import FrameRendered
-from simulation import Environment
 from simulation.environment.events import UpdateRequest, Tick
 from simulation.location import Circle, CircleSpace
 from timer.timer import Timer

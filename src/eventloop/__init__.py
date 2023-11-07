@@ -1,2 +1,2 @@
 
-from eventloop.eventloop import Event, Listener, EventLoop
+from eventloop.eventloop import Event, Listener, CallbackListener, EventLoop
