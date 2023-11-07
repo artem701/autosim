@@ -38,7 +38,10 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        PYTHONPATH=src pytest
+        ./test.sh
+    - name: Run samples
+      run: |
+        ./run-samples.sh
     - name: Benchmark
       run: |
         ./bench.sh

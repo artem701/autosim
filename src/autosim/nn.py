@@ -57,7 +57,10 @@ class NeuralNetwork(Serializable):
         return pgnn.predict(last_layer=self.output_layer, data_inputs=np.array(inputs, np.double), problem_type=problem_type)
 
     def predict(self, inputs: np.ndarray, problem_type: str = 'regression'):
-        return self.predict_many(inputs=[inputs], problem_type=problem_type)[0]
+        prediction = self.predict_many(inputs=[inputs], problem_type=problem_type)[0]
+        if type(prediction) is not np.ndarray:
+            prediction = np.array([prediction])
+        return prediction
 
     def layers_reversed(self) -> Generator[pgnn.DenseLayer | pgnn.InputLayer, Any, None]:
         layer = self.output_layer
