@@ -38,13 +38,13 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        ./test.sh
+        bash ./test.sh
     - name: Run samples
       run: |
-        ./run-samples.sh
+        bash ./run-samples.sh
     - name: Benchmark
       run: |
-        ./bench.sh
+        bash ./bench.sh
     - name: Coverage
       run: |
-        ./coverage.sh report --format=markdown --sort=cover
+        bash ./coverage.sh report --format=markdown --sort=cover
