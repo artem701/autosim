@@ -10,6 +10,8 @@ SpaceMapper = Callable[[Object], tuple[float, float]]
 
 
 class Mapper:
+    """Maps Object to a drawable entity.
+    """
 
     COLORS_N = 36
     COLORS = [(round(255 * r), round(255 * g), round(255 * b))

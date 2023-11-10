@@ -1,5 +1,6 @@
 
 import math
+from autosim.car.ncar import NCar
 from eventloop.eventloop import Event, Listener
 from helpers.functions import mps_to_kph, not_implemented
 from renderer.frame import copy_frame
@@ -87,11 +88,18 @@ class Renderer(Listener):
         canvas = self.create_canvas()
 
         text_duration = 5
+        
+        def text_common(body, drawable):
+            text = f"{drawable.name}: x={body.location.x():.2f} m"
+            if isinstance(body, NCar):
+                text += f", d: {body.d:.2f}"
+            return text
+
         text_mapper = [
             # mps
-            lambda body, drawable: f"{drawable.name}: x={body.location.x():.2f} m, v={body.v:.2f} m/s",
+            lambda body, drawable: f"{text_common(body, drawable)}, v={body.v:.2f} m/s",
             # kph
-            lambda body, drawable: f"{drawable.name}: x={body.location.x():.2f} m, v={mps_to_kph(body.v):.2f} km/h",
+            lambda body, drawable: f"{text_common(body, drawable)}, v={mps_to_kph(body.v):.2f} km/h",
         ]
         pick_text = lambda t: text_mapper[math.floor(t / text_duration) % len(text_mapper)]
 
@@ -124,24 +132,19 @@ class Renderer(Listener):
             location = environment.bodies[0].location
             self.space = location.space
 
-        if len(environment.bodies) == 0:
-            return None
-
         return self.space
 
     def get_mapper(self, environment: Environment) -> Mapper:
         if self.mapper is None:
 
             space = self.get_space(environment)
-            space_mapper = self.none_mapper()
 
             if isinstance(space, LineSpace):
-                space_mapper = self.line_mapper
-
-            if isinstance(space, CircleSpace):
-                space_mapper = self.circle_mapper(space)
-
-            self.mapper = Mapper(space_mapper)
+                self.mapper = self.line_mapper
+            elif isinstance(space, CircleSpace):
+                self.mapper = self.circle_mapper(space)
+            else:
+                self.mapper = self.none_mapper()
 
         return self.mapper
 
@@ -159,7 +162,7 @@ class Renderer(Listener):
             l = space.length()
             angle = 2 * math.pi * x / l
             return int(round(cx + math.cos(angle) * r)), int(round(cy - math.sin(angle) * r))
-        return map
+        return Mapper(space_mapper=map)
 
     def circle(self, margin=10):
         r = int(math.floor(min(self.width, self.height)) / 2 - margin)
