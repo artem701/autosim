@@ -127,7 +127,7 @@ class EventLoop(Listener):
 
         input_events = set(to_array(listener.input_events()))
         if len(input_events) == 0:
-            raise RuntimeError(f"{listener} has no iput events!")
+            logging.warning(f"{listener} has no iput events!")
 
         self._listners.add(listener)
         for evt in input_events:

@@ -25,20 +25,18 @@ class NCar(Car):
         super().__init__(location=location, spec=spec, f=f, name=name)
         assert isinstance(network, NeuralNetwork)
         self.network = network
+        self.d = 0
 
     def update(self, environment: Environment):
-        bodies = environment.bodies
-        self_index = index_if(bodies, lambda body: body is self)
-        front_index = None
-        if self_index is not None:
-            front_index = (self_index + 1) % len(bodies)
-            front = bodies[front_index]
-            dx = self.location.distance(front.location)
-            dv = front.v - self.v
+        next = self.next(environment=environment)
+        if next is not None:
+            dx = self.location.distance(next.location)
+            dv = next.v - next.v
         else:
             # TODO: something better? How to find front if you are not on the body list yet?
             dx = sys.float_info.max
             dv = sys.float_info.max
         decision = self.network.predict([dx, dv, self.v])[0]
         d = bound(decision * 2 - 1, -1, 1)
+        self.d = d
         return self.accelerate(d, environment.dt)

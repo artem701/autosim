@@ -14,13 +14,25 @@ from bisect import insort
 
 @dataclass
 class Tick(Event):
+    """Request from Environment to Objects to calculate their state
+       in moment time + dt.
+    """
     environment: 'Environment'
 
 
 class UpdateRequest(Event):
+    """Request from Driver to Environment to increment time by dt
+       and update its state accordingly.
+    """
     pass
 
-
+@dataclass
+class Collision(Event):
+    # Who hit
+    collider: Moveable
+    # Who was hit
+    collidee: Moveable
+    time: float = None
 
 class Driver(Listener):
 
@@ -48,15 +60,6 @@ class Driver(Listener):
 
     def accept(self, event: Event) -> list[Event]:
         return self.handler(event)
-
-
-@dataclass
-class Collision(Event):
-    # Who hit
-    collider: Moveable
-    # Who was hit
-    collidee: Moveable
-    time: float = None
 
 class Environment:
 
@@ -89,12 +92,9 @@ class Environment:
         self.loop.subscribe(CallbackListener(accept_callback=self._accept, input_events=Environment.INPUT_EVENTS))
         self.loop.subscribe(driver)
     
-    def _subscribe(self, listener: Listener):
-        self.loop.put(AddListener(listener))
-
     def subscribe(self, *listeners):
         for listener in listeners:
-            self._subscribe(listener)
+            self.loop.put(AddListener(listener))
 
     def put(self, event):
         self.loop.put(event=event)
@@ -102,16 +102,20 @@ class Environment:
     def simulate(self):
         self.loop.loop()
 
-    def _add_object(self, object):
+    def iterate(self):
+        self.loop.iterate()
+
+    def _add_object(self, object: Object):
+        object.environment = self
         self.objects.add(object)
 
-    def _add_moveable(self, object):
-        self._add_object(object)
-        insort(self.moveables, object, key=lambda obj: obj.location.x())
+    def _add_moveable(self, moveable: Moveable):
+        self._add_object(moveable)
+        insort(self.moveables, moveable, key=lambda m: m.location.x())
 
-    def _add_body(self, object):
-        self._add_moveable(object)
-        insort(self.bodies, object, key=lambda obj: obj.location.x())
+    def _add_body(self, body: Body):
+        self._add_moveable(body)
+        insort(self.bodies, body, key=lambda b: b.location.x())
 
     def _accept(self, event):
 
@@ -124,8 +128,6 @@ class Environment:
             return collisions + [Tick(self)]
 
         if isinstance(event, AddListener):
-            if event.listener in self.objects:
-                return None
 
             if isinstance(event.listener, Body):
                 self._add_body(event.listener)

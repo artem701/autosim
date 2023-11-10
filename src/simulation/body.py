@@ -33,27 +33,5 @@ class Body(Moveable):
         self.v = xv[1]
         return Move(xv[0])
 
-    # @not_implemented
-    # def next(self, environment: Environment):
-    #     # TODO: test, finish implementation
-    #     def getter():
-    #         nonlocal environment
-    #         i = 0
-    #         min_distance = None
-    #         min_distance_index = None
-    #         for body in environment.bodies:
-    #             if body is self:
-    #                 return environment.bodies[(i + 1) % len(environment.bodies)]
-    #             distance = self.location.distance(body.location)
-    #             if distance >= 0 and distance < coalesce(min_distance, distance + 1):
-    #                 min_distance = distance
-    #                 min_distance_index = i
-    #             i += 1
-    #         if min_distance_index is None:
-    #             return self
-    #         else:
-    #             return environment.bodies[min_distance_index]
-    #     next = self._next.get(getter=getter) 
-    #     if next is None:
-    #         self._next.is_set = False
-    #     return next
+    def next(self, environment) -> 'Body':
+        return self.next_in(environment.bodies)

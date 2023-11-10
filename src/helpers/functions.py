@@ -66,6 +66,11 @@ def index_if(array: list, predicate: Callable[[Any], bool]):
         i += 1
     return None
 
+def curry(f, *args, **kwargs):
+    def curried(*new_args, **new_kwargs):
+        nonlocal f, args, kwargs
+        return f(*args, *new_args, **kwargs, **new_kwargs)
+    return curried
 
 def bound(x, minimum, maximum):
     return max(minimum, min(x, maximum))
