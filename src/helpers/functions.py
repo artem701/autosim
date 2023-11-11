@@ -28,15 +28,18 @@ def remove_by_identity(list: list, element):
     return False
 
 
-def to_array(arg):
+def to_iterable(arg):
     if arg is None:
         return []
+    
+    if hasattr(arg, '__iter__'):
+        return arg
+    
+    return [arg]
 
-    try:
-        return list(arg)
-    except:
-        return [arg]
 
+def to_array(arg):
+    return list(to_iterable(arg))
 
 def get_class_that_defined_method(meth):
     if isinstance(meth, functools.partial):

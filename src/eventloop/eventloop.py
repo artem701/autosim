@@ -1,4 +1,4 @@
-from helpers import remove_by_identity, to_array
+from helpers import remove_by_identity, to_array, to_iterable
 import logging
 from enum import Enum, auto
 from typing import Callable
@@ -104,7 +104,7 @@ class EventLoop(Listener):
         return {Terminate, AddListener, RemoveListener}
 
     def accept(self, event: Event) -> list[Event]:
-        logging.debug(f"rcv {event}")
+        logging.debug("rcv %s", event)
         if isinstance(event, AddListener):
             self._listners_actions.append(
                 (event.listener, EventLoop._ListnerAction.ADD))
@@ -120,20 +120,20 @@ class EventLoop(Listener):
             self._terminate_immediate_flag = self._terminate_immediate_flag or event.immediate
 
     def subscribe(self, listener: Listener) -> bool:
-        logging.debug(f"subscribe {listener}...")
+        logging.debug("subscribe %s...", listener)
         for l in self._listners:
             if l is listener:
                 raise RuntimeError(f"{listener} is already subscribed!")
 
-        input_events = set(to_array(listener.input_events()))
+        input_events = set(to_iterable(listener.input_events()))
         if len(input_events) == 0:
-            logging.warning(f"{listener} has no iput events!")
+            logging.warning("%s has no iput events!", listener)
 
         self._listners.add(listener)
         for evt in input_events:
             self._map.setdefault(
                 evt, EventLoop.ListenersQueue()).append(listener)
-        logging.debug(f"subscribed to events {input_events}.")
+        logging.debug("subscribed to events %s", input_events)
         return True
 
     def unsubscribe(self, listener: Listener):
@@ -184,19 +184,19 @@ class EventLoop(Listener):
         new_events = EventLoop.EventsQueue()
         listeners = self._map.setdefault(type(event), [])
 
-        logging.debug(f"handle event {event}")
+        logging.debug("handle event %s", event)
 
         if len(listeners) == 0:
-            logging.warning(f"Unhandeled event {type(event)}")
+            logging.warning("Unhandeled event %s", type(event))
 
         # For each listner which accepts this event
         for l in listeners:
             try:
-                evs = to_array(l.accept(event))
+                evs = to_iterable(l.accept(event))
             except Exception as exception:
                 raise RuntimeError(f"Exception during processing of event {event} by listener {l}") from exception
 
-            logging.debug(f"\t{l} responded with {evs}")
+            logging.debug("\t%s responded with %s", l, evs)
             for ev in evs:
                 if isinstance(ev, type):
                     ev = ev()
@@ -210,7 +210,7 @@ class EventLoop(Listener):
 
     def _handle_listeners_actions(self):
         for listener, action in self._listners_actions:
-            logging.debug(f"handle {action.name} {listener}")
+            logging.debug("handle %s %s", action.name, listener)
             if action == EventLoop._ListnerAction.ADD:
                 self.subscribe(listener)
             elif action == EventLoop._ListnerAction.REMOVE:
