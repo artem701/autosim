@@ -27,3 +27,5 @@ class Simulation:
         
         environment.subscribe(terminator, *p.objects)
         environment.simulate()
+        
+        return environment

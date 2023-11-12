@@ -31,7 +31,7 @@ class Body(Moveable):
 
         xv = rk2a(x_v_diff, [0, self.v], [0, dt])[-1]
         self.v = xv[1]
-        return Move(xv[0])
+        return Move(max(0, xv[0]))
 
     def next(self, environment) -> 'Body':
         return self.next_in(environment.bodies)

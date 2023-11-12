@@ -11,7 +11,7 @@ def simulate(parameters: autosim.simulation.SimulationParameters):
     """Perform simulation. Applies side effects!
     """
     simulation = autosim.simulation.Simulation(parameters)
-    simulation.simulate()
+    return simulation.simulate()
 
 
 def fitness(target: autosim.car.Car, simulation_parameters: autosim.simulation.SimulationParameters, strategy: autosim.estimation.EstimationStrategy) -> float:

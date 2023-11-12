@@ -7,7 +7,7 @@ import autosim.training as t
 import autosim.estimation as e
 import autosim.simulation as s
 import autosim.car as c
-from helpers.functions import kph_to_mps
+from helpers import kph_to_mps, measure_time
 from renderer import Renderer
 from simulation.location import Circle, CircleSpace, Line
 import os
@@ -17,29 +17,8 @@ import logging
 
 SOLUTION_FILE = 'solution.json'
 L = 500
-T_TRAINING = 20
+T_TRAINING = 60
 ARCHITECTURE = NetworkArchitecture([DenseLayerArchitecture(4, ActivationFunction.SIGM)] * 1, ActivationFunction.SIGM)
-
-def measure_time(func, /, level=logging.INFO):
-    def wrap(func):
-        def wrapper(*args, **kwargs):
-            nonlocal level
-
-            logging.log(level=level, msg=f"{func.__name__}...")
-
-            start = time()
-            ret = func(*args, **kwargs)
-            end = time()
-
-            logging.log(level=level, msg=f"finished {func.__name__} in {end - start:.2f} seconds")
-
-            return ret
-        return wrapper
-
-    if func is None:
-        return wrap
-    
-    return wrap(func)
 
 def get_solution():
     if os.path.isfile(SOLUTION_FILE):
@@ -53,9 +32,9 @@ def load():
 
 @measure_time
 def train():
-    POPULATION = 16
-    GENERATIONS = 10
-    PARENTS_MATING = 8
+    POPULATION = 8
+    GENERATIONS = 16
+    PARENTS_MATING = 4
     
     estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.ReferenceCriteria(1, 100))
 

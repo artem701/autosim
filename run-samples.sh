@@ -2,7 +2,7 @@
 
 source env.sh
 
-for i in sample/*; do
+for i in `find samples -name '__main__.py'`; do
     echo -e "\nrun $i\n"
     python3 $i
     code=$?

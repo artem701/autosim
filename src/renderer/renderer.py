@@ -91,7 +91,7 @@ class Renderer(Listener):
         
         def text_common(body, drawable):
             text = f"{drawable.name}: x={body.location.x():.2f} m"
-            if isinstance(body, NCar):
+            if hasattr(body, 'd'):
                 text += f", d: {body.d:.2f}"
             return text
 

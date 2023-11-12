@@ -109,6 +109,7 @@ class TrainingSuite:
 class SuiteAggregationStrategy(Enum):
    SUM_FITNESSES = lambda fitnesses: sum(fitnesses)
    SUM_FINES     = lambda fitnesses: 1 / sum([(1 / fitness if fitness > 0 else sys.float_info.max) for fitness in fitnesses])
+   MAX_FINE      = lambda fitnesses: 1 / max([(1 / fitness if fitness > 0 else sys.float_info.max) for fitness in fitnesses])
 
 
 @dataclass

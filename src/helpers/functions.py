@@ -1,6 +1,8 @@
 
 import functools
 import inspect
+import logging
+import time
 from typing import Any, Callable
 
 
@@ -83,3 +85,24 @@ def kph_to_mps(kph: float) -> float:
 
 def mps_to_kph(mps: float) -> float:
     return mps * 3600 / 1000
+
+def measure_time(func, /, level=logging.INFO):
+    def wrap(func):
+        def wrapper(*args, **kwargs):
+            nonlocal level
+
+            logging.log(level=level, msg=f"{func.__name__}...")
+
+            start = time.time()
+            ret = func(*args, **kwargs)
+            end = time.time()
+
+            logging.log(level=level, msg=f"finished {func.__name__} in {end - start:.2f} seconds")
+
+            return ret
+        return wrapper
+
+    if func is None:
+        return wrap
+    
+    return wrap(func)

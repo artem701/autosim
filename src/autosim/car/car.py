@@ -12,7 +12,8 @@ import autosim.car.specs as specs
 
 @dataclass
 class Friction:
-    ASPHALT = 0.0015
+    ICE = 0.02
+    ASPHALT = 0.015
     STONE = 0.02
     GROUND = 0.03
     SAND = 0.15
@@ -22,22 +23,16 @@ class Car(Body):
 
     AIR_DENSITY = 1.25
     g = 9.8
-    F_BREAK = 0.05
 
     def __init__(self, location: Location = Line(0), spec: specs.Characteristics = specs.TEST, f: Friction = Friction.ASPHALT, name: str = None):
         super().__init__(location=location, mass=spec.mass, name=name)
-        if f >= Car.F_BREAK:
+        if f >= spec.mbreak:
             raise ValueError(
-                f"f is expected to be less than f_break = {Car.F_BREAK}")
+                f"f is expected to be less than mbreak = {spec.mbreak}")
         self.spec = spec
         self.f = f
 
-        N = spec.mass * Car.g
-        self.__F_break_max = N * Car.F_BREAK
-        self.__F_friction = N * f
-        self.__K_air = spec.front_area * \
-            spec.streamlining * Car.AIR_DENSITY / 2
-
+        self.N = spec.mass * Car.g
         self.v = 0
 
         self._next = Cached[Body]()
@@ -65,16 +60,20 @@ class Car(Body):
         d_neg = -d if d < 0 else 0
 
         def force(t, x, v):
-            # TODO: ensure formula is right, fix if needed, check if "v * ..." is needed in friction section
-            result = d_pos * self.spec.thrust \
-                - v * (self.__F_friction + d_neg * (self.__F_break_max - self.__F_friction)) \
-                - self.__K_air * (v ** 2)
+            # ref https://studref.com/596310/tehnika/sily_deystvuyuschie_avtomobil_pryamolineynom_dvizhenii
+            F_thrust = d_pos * self.spec.thrust
+            F_frict = self.f * (1 + (v**2) / 1500) * self.N
+            F_break = d_neg * self.spec.mbreak * (1 + (v**2) / 1500) * self.N * self.f / Friction.ASPHALT
+            F_air = self.spec.front_area * self.spec.streamlining * (v**2)
+            
+            result = F_thrust - F_frict - F_break - F_air
+            
             return result
 
         return self.push(dt, force)
 
     @not_implemented
-    def update(self, environment: Environment) -> Move:
+    def update(self, environment: Environment) -> Event:
         pass
 
     def on_collision(self, collision: Collision):
