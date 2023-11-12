@@ -38,8 +38,8 @@ last_fitness = 0
 def callback_generation(ga_instance):
     global last_fitness
     print(f"Generation = {ga_instance.generations_completed}")
-    print(f"Fitness    = {ga_instance.best_solution()[1]}")
-    print(f"Change     = {ga_instance.best_solution()[1] - last_fitness}")
+    print(f"\tFitness    = {ga_instance.best_solution()[1]}")
+    print(f"\tChange     = {ga_instance.best_solution()[1] - last_fitness}")
     last_fitness = ga_instance.best_solution()[1]
 
 

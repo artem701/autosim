@@ -57,7 +57,7 @@ environment = Environment()
 cars = [ACar(f"sin(2*pi*t/20 + {i/CARS}*2*pi) * 5", ACar.Mode.ACCELERATION, Circle(CircleSpace(L), -
              i * (L // CARS)), spec=specs.TEST, name=f"car-{i+1}") for i in range(CARS)]
 renderer = Renderer(fps=FPS, width=W, height=H)
-watcher = Watcher(T)
+watcher = Watcher(T, logging_interval=T//10)
 
 environment.subscribe(*cars, renderer, watcher)
 
