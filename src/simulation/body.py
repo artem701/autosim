@@ -1,4 +1,5 @@
 
+from eventloop.eventloop import Event
 from helpers import Cached, coalesce
 from simulation import Moveable
 from simulation import Location
@@ -30,7 +31,7 @@ class Body(Moveable):
             ])
 
         xv = rk2a(x_v_diff, [0, self.v], [0, dt])[-1]
-        self.v = xv[1]
+        self.v = max(0, xv[1])
         return Move(max(0, xv[0]))
 
     def next(self, environment) -> 'Body':

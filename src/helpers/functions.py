@@ -86,21 +86,53 @@ def kph_to_mps(kph: float) -> float:
 def mps_to_kph(mps: float) -> float:
     return mps * 3600 / 1000
 
-def measure_time(func, /, level=logging.INFO):
+def indent(func, /, logger: logging.Logger = None):
     def wrap(func):
         def wrapper(*args, **kwargs):
-            nonlocal level
+            nonlocal logger
+            logger = coalesce(logger, logging.getLogger())
 
-            logging.log(level=level, msg=f"{func.__name__}...")
+            handlers = []
+            for h in logger.handlers:
+                if hasattr(h.formatter, 'up') and hasattr(h.formatter, 'down'):
+                    h.formatter.up()
+                    handlers += [h]
 
-            start = time.time()
             ret = func(*args, **kwargs)
-            end = time.time()
 
-            logging.log(level=level, msg=f"finished {func.__name__} in {end - start:.2f} seconds")
+            for h in handlers:
+                h.formatter.down()
 
             return ret
+
         return wrapper
+
+    if func is None:
+        return wrap
+    
+    return wrap(func)
+
+def measure_time(func, /, level=logging.INFO):
+    def wrap(func):
+        def measure_time(*args, **kwargs):
+            nonlocal level
+
+            @indent
+            def call():
+                nonlocal args, kwargs
+                return func(*args, **kwargs)
+
+
+            logging.log(level=level, msg=f"┬ start {func.__name__}...")
+
+            start = time.time()
+            ret = call()
+            end = time.time()
+
+            logging.log(level=level, msg=f"┴ finished {func.__name__} in {end - start:.2f} seconds")
+
+            return ret
+        return measure_time
 
     if func is None:
         return wrap

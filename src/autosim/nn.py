@@ -9,6 +9,9 @@ from helpers.cached import Cached
 @dataclass
 class LayerArchitecture:
     n: int
+    
+    def __str__(self):
+        return str(self.n)
 
 @dataclass
 class InputLayerArchitecture(LayerArchitecture):
@@ -23,11 +26,17 @@ class ActivationFunction(enum.Enum):
 @dataclass
 class DenseLayerArchitecture(LayerArchitecture):
     f: ActivationFunction
+    
+    def __str__(self):
+        return super().__str__() + f" ({self.f.value})"
 
 @dataclass
 class NetworkArchitecture:
     input_layer: InputLayerArchitecture
     dense_layers: list[DenseLayerArchitecture]
+    
+    def __str__(self):
+        return ' x '.join([str(layer) for layer in [self.input_layer, *self.dense_layers]])
 
 @dataclass
 class NeuralNetwork(Serializable):

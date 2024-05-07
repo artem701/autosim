@@ -5,6 +5,7 @@ import eventloop
 import helpers
 import simulation.environment.events
 import simulation.location
+import logging
 
 from dataclasses import dataclass, field
 from eventloop.eventloop import Event, Terminate
@@ -48,7 +49,7 @@ class EstimatorObject(eventloop.Listener):
                 self.fine += self.periodical_fine(env)
 
         if isinstance(event, Collision):
-            if event.collider is not self:
+            if event.collider is not self.target:
                 return
 
             assert not self.first

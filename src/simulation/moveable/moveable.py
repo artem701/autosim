@@ -12,13 +12,13 @@ class Moveable(Object):
         return Move(dx)
     
     def __str__(self):
-        return f"{self.location}"
+        return f"{self.__class__} (Moveable at {self.location})"
     
     def next_in(self, array: list['Moveable']):
         self_index = 0
         for moveable in array:
             if moveable is self:
-                break 
+                break
             self_index += 1
         
         if self_index == len(array):

@@ -44,6 +44,8 @@ class Renderer(Listener):
         for frame in self.frames:
             writer.write(frame)
         writer.release()
+        
+        return path
 
     def input_events(self) -> set:
         return Tick

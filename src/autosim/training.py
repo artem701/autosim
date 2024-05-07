@@ -105,11 +105,16 @@ class TrainingSuite:
    estimation: EstimationStrategy
    simulation: SimulationParameters
 
+def to_fine(fitness):
+   return 1 / fitness if fitness > 0 else sys.float_info.max
+
+def to_fitness(fine):
+   return 1 / fine if fine > 0 else sys.float_info.max
 
 class SuiteAggregationStrategy(Enum):
    SUM_FITNESSES = lambda fitnesses: sum(fitnesses)
-   SUM_FINES     = lambda fitnesses: 1 / sum([(1 / fitness if fitness > 0 else sys.float_info.max) for fitness in fitnesses])
-   MAX_FINE      = lambda fitnesses: 1 / max([(1 / fitness if fitness > 0 else sys.float_info.max) for fitness in fitnesses])
+   SUM_FINES     = lambda fitnesses: to_fitness(sum([to_fine(fitness) for fitness in fitnesses]))
+   MAX_FINE      = lambda fitnesses: to_fitness(max([to_fine(fitness) for fitness in fitnesses]))
 
 
 @dataclass
