@@ -18,16 +18,38 @@ class Criteria:
         return self.fine
 
 @dataclass
-class ReferenceCriteria(Criteria):
+class ValueCriteria(Criteria):
+    def get_fine(self, value):
+        return super().get_fine()
+
+@dataclass
+class ReferenceCriteria(ValueCriteria):
     reference: float
     def get_fine(self, value: float):
-        return super().get_fine() * abs(value - self.reference)
+        return super().get_fine(value) * abs(value - self.reference)
+
+@dataclass
+class LessCriteria(ReferenceCriteria):
+    def get_fine(self, value: float):
+        return super().get_fine(value) if not value < self.reference else 0 
+
+@dataclass
+class MoreCriteria(ReferenceCriteria):
+    def get_fine(self, value: float):
+        return super().get_fine(value) if not value > self.reference else 0 
+
+@dataclass
+class BetweenCriteria(ValueCriteria):
+    left: float
+    right: float
+    def get_fine(self, value: float):
+        return super().get_fine(value) * min(abs(value - self.left), abs(value - self.right)) if not self.left < value < self.right else 0 
 
 @dataclass
 class EstimationStrategy:
     collision: Criteria = field(default_factory=lambda:Criteria(0))
-    speed: ReferenceCriteria = field(default_factory=lambda:ReferenceCriteria(0, 0))
-    distance: ReferenceCriteria = field(default_factory=lambda:ReferenceCriteria(0, 0))
+    speed: ValueCriteria = field(default_factory=lambda:ReferenceCriteria(0, 0))
+    distance: ValueCriteria = field(default_factory=lambda:ReferenceCriteria(0, 0))
 
 class EstimatorObject(eventloop.Listener):
     def __init__(self, target: autosim.car.Car, strategy: EstimationStrategy):
