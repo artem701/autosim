@@ -154,6 +154,7 @@ class Generations(list[Generation], Serializable):
 class TrainingSession:
    strategy: TrainingStrategy
    ga: pygad.GA
+   architecture: NetworkArchitecture
 
 @dataclass
 class TrainingContext:
@@ -192,4 +193,4 @@ def train(strategy: TrainingStrategy, population: Population) -> TrainingSession
    kwargs['gene_type'] = np.double
    ga = pygad.GA(**kwargs)
    ga.run()
-   return TrainingSession(strategy=strategy, ga=ga)
+   return TrainingSession(strategy=strategy, ga=ga, architecture=architecture)
