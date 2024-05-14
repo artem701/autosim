@@ -136,7 +136,7 @@ class Population(Serializable):
    
    @staticmethod
    def random(n: int, architecture: NetworkArchitecture, bound: tuple[float, float]) -> 'Population':
-      assert n > 0
+      assert n >= 0
       return Population(networks=[NeuralNetwork.random(architecture=architecture, bound=bound) for _ in range(n)])
    
    def as_vectors(self) -> list[np.ndarray]:

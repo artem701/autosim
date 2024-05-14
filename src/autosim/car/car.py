@@ -54,8 +54,7 @@ class Car(Body):
         if isinstance(event, RemoveListener) and isinstance(event.listener, Body):
             self._next.unset()
 
-        
-    def accelerate(self, d: float, dt: float) -> Move:
+    def get_force(self, d: float):
         d_pos = d if d > 0 else 0
         d_neg = -d if d < 0 else 0
 
@@ -70,7 +69,10 @@ class Car(Body):
             
             return result
 
-        return self.push(dt, force)
+        return force
+        
+    def accelerate(self, d: float, dt: float) -> Move:
+        return self.push(dt, self.get_force(d))
 
     @not_implemented
     def update(self, environment: Environment) -> Event:
