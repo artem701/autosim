@@ -83,7 +83,7 @@ def get_cautious_training_strategy():
 @strategy_value
 def get_speedy_training_strategy():
     # estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), speed=e.ReferenceCriteria(fine=0.01, reference=kph_to_mps(120)))
-    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.ReferenceCriteria(fine=0.01, reference=0))
+    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.LessCriteria(fine=0.01, reference=10) + e.MoreCriteria(fine=0.05, reference=5), speed=e.LessCriteria(0.01, kph_to_mps(60)))
     return [
         # learn to stop
         t.TrainingSuite(estimation=estimation_strategy,
@@ -239,33 +239,44 @@ def render(renderer: Renderer, dir: str, name: str):
 
 def action_train(args):
     for strategy in args.strategies:
-        solution = get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations)
-
-        if args.no_render:
-            continue
-
-        renderer = Renderer(args.fps, args.width, args.height)
-        simulate(solution, renderer)
-        render(renderer, args.solutions, strategy.name)
+        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations)
+    action_render(args)
 
 def action_info(args):
-    paths: list[str] = args.solutions_paths
-    if not paths:
-        paths = ['.']
-
-    for path in paths:
-        path = pathlib.Path(path)
-        if path.is_file():
-            files = [path]
-        else:
-            files = path.glob('*.json')
+    path: str = args.solutions
+    if path.is_file():
+        files = [path]
+    else:
+        files = path.glob('*.json')
 
     for file in files:
         logging.info(f"Found solution: {file.absolute()}")
         logging.info(f"Architecture:   {NeuralNetwork.from_file(file).architecture()}")
 
+def action_render(args):
+
+    if args.no_render:
+        return
+
+    path: str = args.solutions
+    if not path:
+        path = '.'
+
+    path = pathlib.Path(path)
+    if path.is_file():
+        files = [path]
+    else:
+        files = path.glob('*.json')
+
+    solutions = [load(file) for file in files]
+
+    for solution in solutions:
+        renderer = Renderer(args.fps, args.width, args.height)
+        simulate(solution, renderer)
+
 class Action(Enum):
     train = partial(action_train)
+    render = partial(action_render)
     info = partial(action_info)
 
     @staticmethod
@@ -273,7 +284,7 @@ class Action(Enum):
         for item in Action:
             if item.name == string:
                 return item
-        return None
+        raise RuntimeError(f"No action {string}")
 
 @measure_time
 def everything(args):
@@ -329,20 +340,13 @@ def setup_logging(level):
 def make_parser():
     parser = argparse.ArgumentParser(add_help=False)
 
-    parser.add_argument('action', default=Action.train.name, nargs='*', help='Action to perform.')
+    parser.add_argument('action', default=Action.train.name, choices=[item.name for item in Action], help='Action to perform.')
+    parser.add_argument('solutions', nargs='?', default='.', help='Folder to search/store solutions.')
 
     parser.add_argument('-h', '--help', action='store_true', default=False,
                         help='Show this help message and exit.')
 
-    paths = parser.add_argument_group('info')
-    paths.add_argument('solutions_paths', action='append', nargs='*', help='Paths to look for solutions at.')
-
-
-    paths = parser.add_argument_group('paths')
-    paths.add_argument('-o', '--solutions', default='.',
-                       help='Folder to search/store solutions.')
-
-    training = parser.add_argument_group('training')
+    training = parser.add_argument_group('train')
     training.add_argument('-n', '--new', action='store_true', default=False,
                           help='Generate new solutions instead of using existing.')
     training.add_argument('-c', '--continue', action='store_true', default=False, dest='cont',
@@ -354,7 +358,7 @@ def make_parser():
     training.add_argument('-g', '--generations', default=None, type=int,
                           help='Number of generations.')
 
-    rendering = parser.add_argument_group('rendering')
+    rendering = parser.add_argument_group('render')
     rendering.add_argument('-d', '--no-render', action='store_true', default=False,
                            help='Skip rendering solutions.')
     rendering.add_argument('--fps', default=24,
@@ -381,9 +385,6 @@ def parse_args(argv):
         exit(0)
 
     args.solutions = os.path.abspath(args.solutions)
-    
-    if not os.path.isdir(args.solutions):
-        raise NotADirectoryError(f"solutions directory not found: {args.solutions}")
 
     args.strategies = coalesce(args.strategies, [item.name for item in Strategy if item != Strategy.null])
     args.strategies = [Strategy.from_string(string) for string in args.strategies]

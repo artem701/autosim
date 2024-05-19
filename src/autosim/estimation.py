@@ -10,12 +10,20 @@ import logging
 from dataclasses import dataclass, field
 from eventloop.eventloop import Event, Terminate
 from simulation.environment.events import Collision, Tick
+from typing import Callable
 
 @dataclass
 class Criteria:
     fine: float
     def get_fine(self):
         return self.fine
+    def __add__(self, other):
+        return LambdaCriteria(lambda *args: self.get_fine(*args) + other.get_fine(*args))
+
+class LambdaCriteria(Criteria):
+    fine: Callable
+    def get_fine(self, *args):
+        return self.fine(*args)
 
 @dataclass
 class ValueCriteria(Criteria):
@@ -37,13 +45,6 @@ class LessCriteria(ReferenceCriteria):
 class MoreCriteria(ReferenceCriteria):
     def get_fine(self, value: float):
         return super().get_fine(value) if not value > self.reference else 0 
-
-@dataclass
-class BetweenCriteria(ValueCriteria):
-    left: float
-    right: float
-    def get_fine(self, value: float):
-        return super().get_fine(value) * min(abs(value - self.left), abs(value - self.right)) if not self.left < value < self.right else 0 
 
 @dataclass
 class EstimationStrategy:
