@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import enum
 from typing import Any, Generator
+import math
 import numpy as np
 import pygad.nn as pgnn
 from helpers import Serializable
@@ -42,6 +43,7 @@ class NetworkArchitecture:
 class NeuralNetwork(Serializable):
     output_layer: pgnn.DenseLayer
     _architecture: Cached[NetworkArchitecture] = field(default_factory=Cached)
+    fitness: float = math.nan
     
     def __eq__(self, other: 'NeuralNetwork'):
         if self.architecture() != other.architecture():

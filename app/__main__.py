@@ -83,7 +83,7 @@ def get_cautious_training_strategy():
 @strategy_value
 def get_speedy_training_strategy():
     # estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), speed=e.ReferenceCriteria(fine=0.01, reference=kph_to_mps(120)))
-    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.LessCriteria(fine=0.01, reference=10) + e.MoreCriteria(fine=0.05, reference=5), speed=e.LessCriteria(0.01, kph_to_mps(60)))
+    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.LessCriteria(fine=0.01, reference=10) + e.MoreCriteria(fine=0.05, reference=5), speed=e.LessCriteria(0.1, kph_to_mps(60)))
     return [
         # learn to stop
         t.TrainingSuite(estimation=estimation_strategy,
@@ -140,7 +140,7 @@ class Strategy(Enum):
         return None
 
 def plot_fitness(path, session: t.TrainingSession):
-    fitness = [1 / fitness for fitness in session.ga.best_solutions_fitness]
+    fitness = [1 / fitness for fitness in session.ga.best_solutions_fitness[1:]]
     plt.clf()
     plt.title('Fitness over generations')
     plt.plot(fitness)
@@ -215,6 +215,7 @@ def train(base: NeuralNetwork, strategy: Strategy, population: int = None, gener
     logging.info(f"best solution found in generation {session.ga.best_solution_generation} with fitness {solution_fitness} (fine {1 / solution_fitness if solution_fitness > 0 else '+inf'})")
 
     network = NeuralNetwork.from_vector(architecture=ARCHITECTURE, vector=solution)
+    network.fitness = solution_fitness
 
     return network, session
 
@@ -243,15 +244,23 @@ def action_train(args):
     action_render(args)
 
 def action_info(args):
-    path: str = args.solutions
+    path = pathlib.Path(args.solutions)
     if path.is_file():
         files = [path]
     else:
-        files = path.glob('*.json')
+        files = path.glob('**/*.json')
+
+    def print_solution(file):
+        @indent
+        def print_network(network):
+            logging.info(f"Architecture:   {network.architecture()}")
+            logging.info(f"Fitness:        {network.fitness}")
+
+        logging.info(f"Found solution: {file.absolute()}")
+        print_network(NeuralNetwork.from_file(file))
 
     for file in files:
-        logging.info(f"Found solution: {file.absolute()}")
-        logging.info(f"Architecture:   {NeuralNetwork.from_file(file).architecture()}")
+        print_solution(file)
 
 def action_render(args):
 
@@ -262,17 +271,19 @@ def action_render(args):
     if not path:
         path = '.'
 
+    files = None
     path = pathlib.Path(path)
     if path.is_file():
         files = [path]
     else:
-        files = path.glob('*.json')
+        files = list(path.glob('*.json'))
 
     solutions = [load(file) for file in files]
 
-    for solution in solutions:
+    for solution, file in zip(solutions, files):
         renderer = Renderer(args.fps, args.width, args.height)
         simulate(solution, renderer)
+        render(renderer, file.parent, file.stem)
 
 class Action(Enum):
     train = partial(action_train)
