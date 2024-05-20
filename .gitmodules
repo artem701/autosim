@@ -1,0 +1,3 @@
+[submodule "src/pygad"]
+	path = src/pygad
+	url = https://github.com/ahmedfgad/GeneticAlgorithmPython.git

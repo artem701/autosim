@@ -3,7 +3,7 @@ import logging
 from autosim.nn import *
 from dataclasses import dataclass
 from helpers import Serializable
-import pygad.nn as pgnn
+import pygad.pygad.nn as pgnn
 import pytest
 
 @pytest.mark.parametrize('architecture', [

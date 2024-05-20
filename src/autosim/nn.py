@@ -3,7 +3,7 @@ import enum
 from typing import Any, Generator
 import math
 import numpy as np
-import pygad.nn as pgnn
+import pygad.pygad.nn as pgnn
 from helpers import Serializable
 from helpers.cached import Cached
 
@@ -94,7 +94,7 @@ class NeuralNetwork(Serializable):
         output_layer = input_layer
         weight_index = 0
         for arch in architecture.dense_layers:
-            previous_n = output_layer.num_neurons
+            previous_n = output_layer.num_neurons + 1
             assert weight_index + arch.n * previous_n <= vector.shape[0]
 
             output_layer = pgnn.DenseLayer(arch.n, output_layer, arch.f.value)

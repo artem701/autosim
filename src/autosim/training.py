@@ -12,7 +12,7 @@ from autosim.estimation import EstimationStrategy
 from autosim.simulation import SimulationParameters
 from helpers import Serializable
 import autosim
-import pygad.gann
+import pygad.pygad.gann
 from simulation.body import Body
 
 from simulation.location import Line, LineSpace
@@ -20,7 +20,7 @@ from simulation.location import Line, LineSpace
 
 @dataclass
 class GeneticAlgorithmParameters:
-   """For detailed documentation refer to pygad docs.
+   """For detailed documentation refer to pygad.pygad docs.
    """
    num_generations: int
    """Number of generations.
@@ -153,7 +153,7 @@ class Generations(list[Generation], Serializable):
 @dataclass
 class TrainingSession:
    strategy: TrainingStrategy
-   ga: pygad.GA
+   ga: pygad.pygad.GA
    architecture: NetworkArchitecture
 
 @dataclass
@@ -191,6 +191,6 @@ def train(strategy: TrainingStrategy, population: Population) -> TrainingSession
    kwargs['fitness_func'] = fitness
    kwargs['initial_population'] = population.as_vectors()
    kwargs['gene_type'] = np.double
-   ga = pygad.GA(**kwargs)
+   ga = pygad.pygad.GA(**kwargs)
    ga.run()
    return TrainingSession(strategy=strategy, ga=ga, architecture=architecture)

@@ -83,7 +83,7 @@ def get_cautious_training_strategy():
 @strategy_value
 def get_speedy_training_strategy():
     # estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), speed=e.ReferenceCriteria(fine=0.01, reference=kph_to_mps(120)))
-    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.LessCriteria(fine=0.01, reference=10) + e.MoreCriteria(fine=0.05, reference=5), speed=e.LessCriteria(0.1, kph_to_mps(60)))
+    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.LessCriteria(fine=0.01, reference=10) + e.MoreCriteria(fine=0.05, reference=5), speed=e.LessCriteria(1, kph_to_mps(60)))
     return [
         # learn to stop
         t.TrainingSuite(estimation=estimation_strategy,

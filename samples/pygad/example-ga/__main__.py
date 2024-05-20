@@ -1,4 +1,4 @@
-import pygad
+import pygad.pygad
 import numpy
 
 """
@@ -44,7 +44,7 @@ def callback_generation(ga_instance):
 
 
 # Creating an instance of the GA class inside the ga module. Some parameters are initialized within the constructor.
-ga_instance = pygad.GA(num_generations=num_generations,
+ga_instance = pygad.pygad.GA(num_generations=num_generations,
                        num_parents_mating=num_parents_mating,
                        fitness_func=fitness_function,
                        sol_per_pop=sol_per_pop,
@@ -76,5 +76,5 @@ filename = 'genetic'
 ga_instance.save(filename=filename)
 
 # Loading the saved GA instance.
-loaded_ga_instance = pygad.load(filename=filename)
+loaded_ga_instance = pygad.pygad.load(filename=filename)
 loaded_ga_instance.plot_fitness()

@@ -4,9 +4,7 @@ distinctipy==1.2.3
 jsonpickle==3.0.2
 numpy==1.25.2
 opencv_python==4.8.1.78
-pygad==3.2.0
 pyinstrument==4.6.0
 pytest-benchmark
 pytest-timeout
 pytest==7.4.2
-rich==13.6.0
