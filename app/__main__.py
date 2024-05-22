@@ -1,6 +1,5 @@
 
 from dummy import DummyCar
-from enum import Enum
 from functools import partial
 import autosim
 from autosim.car.ncar import NetworkArchitecture, NeuralNetwork
@@ -10,7 +9,7 @@ import autosim.estimation as e
 import autosim.simulation as s
 import autosim.car as c
 from eventloop.eventloop import Event
-from helpers import kph_to_mps, measure_time, not_implemented, coalesce, indent
+from helpers import kph_to_mps, measure_time, not_implemented, coalesce, indent, SmartEnum
 from renderer import Renderer
 from simulation import Environment, Body
 from simulation.location import Circle, CircleSpace, Line
@@ -25,10 +24,7 @@ import logging
 
 L = 500
 T_TRAINING = 60
-# ARCHITECTURE = NetworkArchitecture([DenseLayerArchitecture(4, ActivationFunction.SIGM)] * 1, ActivationFunction.SIGM)
-ARCHITECTURE = NetworkArchitecture([], ActivationFunction.SIGM)
 BOUND = (-1, 1)
-
 
 def get_testing_simulation_parameters(solution, renderer):
     CARS_TESTED = 5
@@ -52,14 +48,20 @@ def get_null_training_strategy():
 
 @strategy_value
 def get_cautious_training_strategy():
-    optimal_distance = L // 6
-    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.ReferenceCriteria(fine=0.01, reference=optimal_distance), speed=e.LessCriteria(0.01, kph_to_mps(60)))
+    optimal_distance = 30
+    estimation_strategy = e.EstimationStrategy(
+        collision=e.Criteria(10000),
+        distance=
+            e.LessCriteria(fine=0.001, reference=optimal_distance + 10) +
+            e.MoreCriteria(fine=0.001, reference=optimal_distance - 10),
+        speed=e.LessCriteria(1, kph_to_mps(60))
+        )
     return [
         # learn to stop
         t.TrainingSuite(estimation=estimation_strategy,
                         simulation=s.SimulationParameters(
                             timeout=T_TRAINING,
-                            objects=[c.ACar('0', c.ACar.Mode.MOVEMENT, location=Line(optimal_distance // 6), name='trainer')]
+                            objects=[c.ACar('0', c.ACar.Mode.MOVEMENT, location=Line(optimal_distance * 5), name='trainer')]
                             )
                         ),
 
@@ -83,7 +85,13 @@ def get_cautious_training_strategy():
 @strategy_value
 def get_speedy_training_strategy():
     # estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), speed=e.ReferenceCriteria(fine=0.01, reference=kph_to_mps(120)))
-    estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), distance=e.LessCriteria(fine=0.01, reference=10) + e.MoreCriteria(fine=0.05, reference=5), speed=e.LessCriteria(1, kph_to_mps(60)))
+    optimal_distance = 30
+    estimation_strategy = e.EstimationStrategy(
+        collision=e.Criteria(10000),
+        distance=
+         e.LessCriteria(fine=0.1, reference=optimal_distance + 10) + 
+         e.MoreCriteria(fine=0.1, reference=optimal_distance - 10)
+        )
     return [
         # learn to stop
         t.TrainingSuite(estimation=estimation_strategy,
@@ -127,23 +135,16 @@ def get_speedy_training_strategy():
         #                 ),
         ]
 
-class Strategy(Enum):
+class Strategy(SmartEnum):
     null = partial(get_null_training_strategy)
     cautious = partial(get_cautious_training_strategy)
     speedy = partial(get_speedy_training_strategy)
-
-    @staticmethod
-    def from_string(string: str):
-        for item in Strategy:
-            if item.name == string:
-                return item
-        return None
 
 def plot_fitness(path, session: t.TrainingSession):
     fitness = [1 / fitness for fitness in session.ga.best_solutions_fitness[1:]]
     plt.clf()
     plt.title('Fitness over generations')
-    plt.plot(fitness)
+    plt.plot(range(1, session.ga.generations_completed + 1), fitness)
     plt.xlabel('generation')
     plt.ylabel('fine')
     plt.figtext(0.01, 0.01, f"population: {session.ga.sol_per_pop}\ngenerations: {session.ga.generations_completed}\narchitecture: {session.architecture}", fontsize=12, ha='left')
@@ -151,9 +152,14 @@ def plot_fitness(path, session: t.TrainingSession):
     plt.savefig(path)
 
 @indent
-def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, population: int = None, generations: int = None):
-    solution_path = f"{path}/{strategy.name}.json"
-    fitness_path = f"{path}/{strategy.name}.jpg"
+def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, population: int = None, generations: int = None, architecture_string: str = None, subfolder: bool = False):
+    architecture_presented = architecture_string is not None
+    subfolder = subfolder and architecture_presented
+    architecture = NetworkArchitecture.from_string(architecture_string or 'linear', 'sigm')
+    architecture_subpath = '.' if not subfolder else str(architecture)
+
+    solution_path = f"{path}/{architecture_subpath}/{strategy.name}.json"
+    fitness_path = f"{path}/{architecture_subpath}/{strategy.name}.jpg"
 
     logging.info(f"get solution for {strategy.name} strategy")
     
@@ -161,37 +167,45 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
     if cont or not new:
         solution = load(solution_path)
     
-    if solution is None:
+    if solution is not None and architecture_presented and solution.architecture() != architecture:
+        raise RuntimeError(f"Architecture is provided, but solution {solution} with incompatible architecture exists!")
+
+    if solution is not None:
+        architecture = solution.architecture()
+    else:
         logging.info('continue with random base solution')
-        solution = random_solution()
+        solution = random_solution(architecture)
         new = True
+        cont = False
     
     if cont or new:
         if cont:
             logging.info(f"train solution from base: {solution_path}")
-        solution, session = train(solution, strategy, population, generations)
-        os.makedirs(path, exist_ok=True)
+
+        solution, session = train(solution, strategy, population, generations, architecture)
+
+        os.makedirs(pathlib.Path(solution_path).parent, exist_ok=True)
         solution.to_file(solution_path)
-        logging.info(f"written {strategy.name} solution to {solution_path}")
+        logging.info(f"written {strategy.name} solution to \"{solution_path}\"")
 
         plot_fitness(fitness_path, session)        
-        logging.info(f"saved {strategy.name} fitness plot to {fitness_path}")
+        logging.info(f"saved {strategy.name} fitness plot to \"{fitness_path}\"")
 
     return solution
 
 def load(path: str):
     if not os.path.isfile(path):
-        logging.warning(f"solution file {path} is not found!")
+        logging.warning(f"solution file \"{path}\" is not found!")
         return None
     else:
-        logging.info(f"load solution from {os.path.realpath(path)}...")
+        logging.info(f"load solution from \"{os.path.realpath(path)}\"...")
         return NeuralNetwork.from_file(path)
 
-def random_solution():
-    return NeuralNetwork.from_vector(ARCHITECTURE, NeuralNetwork.random(ARCHITECTURE, BOUND).as_vector())
+def random_solution(architecture):
+    return NeuralNetwork.from_vector(architecture, NeuralNetwork.random(architecture, BOUND).as_vector())
 
 @measure_time
-def train(base: NeuralNetwork, strategy: Strategy, population: int = None, generations: int = None):
+def train(base: NeuralNetwork, strategy: Strategy, population: int, generations: int, architecture: NetworkArchitecture):
     
     population, generations = estimate_population_generations(base.architecture(), population, generations)
     logging.info(f"Algorithm genes = {NeuralNetwork.random(architecture=base.architecture()).as_vector().size}, population = {population}, generations = {generations}. Network architecture = {{ {base.architecture()} }}")
@@ -202,6 +216,7 @@ def train(base: NeuralNetwork, strategy: Strategy, population: int = None, gener
         on_stop=lambda ga,fitnesses:logging.info(f"genetic algorithm stopped"),
         on_generation=lambda ga:logging.info(f"finished {ga.generations_completed:3>}/{generations} generations (fine: {1 / np.max(ga.last_generation_fitness):.3f})"),
         parallel_processing=('thread', 4),
+        crossover_type='uniform',
         )
     # agg = t.SuiteAggregationStrategy.SUM_FINES    
     agg = t.SuiteAggregationStrategy.MAX_FINE    
@@ -214,7 +229,7 @@ def train(base: NeuralNetwork, strategy: Strategy, population: int = None, gener
     logging.info(f"trained {session.ga.generations_completed} generations of {generations}")
     logging.info(f"best solution found in generation {session.ga.best_solution_generation} with fitness {solution_fitness} (fine {1 / solution_fitness if solution_fitness > 0 else '+inf'})")
 
-    network = NeuralNetwork.from_vector(architecture=ARCHITECTURE, vector=solution)
+    network = NeuralNetwork.from_vector(architecture=architecture, vector=solution)
     network.fitness = solution_fitness
 
     return network, session
@@ -236,11 +251,11 @@ def simulate(network: NeuralNetwork, renderer: Renderer):
 def render(renderer: Renderer, dir: str, name: str):
     path = os.path.join(dir, name)
     path = renderer.render(path)
-    logging.info(f"rendered file written to {path}")
+    logging.info(f"rendered file written to \"{path}\"")
 
 def action_train(args):
     for strategy in args.strategies:
-        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations)
+        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations, args.architecture, args.create_architecture_subfolder)
     action_render(args)
 
 def action_info(args):
@@ -252,12 +267,16 @@ def action_info(args):
 
     def print_solution(file):
         @indent
-        def print_network(network):
-            logging.info(f"Architecture:   {network.architecture()}")
-            logging.info(f"Fitness:        {network.fitness}")
+        def print_network(file):
+            try:
+                network = NeuralNetwork.from_file(file)
+                logging.info(f"Architecture:   {network.architecture()}")
+                logging.info(f"Fitness:        {network.fitness}")
+            except:
+                logging.warning('Failed to parse!')
 
         logging.info(f"Found solution: {file.absolute()}")
-        print_network(NeuralNetwork.from_file(file))
+        print_network(file)
 
     for file in files:
         print_solution(file)
@@ -280,26 +299,26 @@ def action_render(args):
 
     solutions = [load(file) for file in files]
 
+    if len(solutions) == 0:
+        logging.error(f"No solutions found in \"{path}\"")
+
     for solution, file in zip(solutions, files):
         renderer = Renderer(args.fps, args.width, args.height)
         simulate(solution, renderer)
         render(renderer, file.parent, file.stem)
 
-class Action(Enum):
+class Action(SmartEnum):
     train = partial(action_train)
     render = partial(action_render)
     info = partial(action_info)
 
-    @staticmethod
-    def from_string(string: str):
-        for item in Action:
-            if item.name == string:
-                return item
-        raise RuntimeError(f"No action {string}")
-
 @measure_time
 def everything(args):
-    action = Action.from_string(args.action)
+    try:
+        action = Action.from_string(args.action)
+    except:
+        logging.error(f"Unknown action: {args.action}")
+        return
     action.value(args)
 
 class CustomFormatter(logging.Formatter):
@@ -358,6 +377,14 @@ def make_parser():
                         help='Show this help message and exit.')
 
     training = parser.add_argument_group('train')
+    training.add_argument('-a', '--architecture', default=None,
+                          help=
+                          'Network architecture in following format: <neurons> (<activation>) [x ...] '
+                          'For example: 4 (relu) x 3 (sigm)'
+                          f"Available activations: {','.join([item.name.lower() for item in ActivationFunction])} "
+                          'If -c is specified and base solution exists, error is emitted.'
+                          'Default architecture is linear (sigmoid at the end is always presented for normalization). '
+                          )
     training.add_argument('-n', '--new', action='store_true', default=False,
                           help='Generate new solutions instead of using existing.')
     training.add_argument('-c', '--continue', action='store_true', default=False, dest='cont',
@@ -368,6 +395,8 @@ def make_parser():
                           help='Size of population.')
     training.add_argument('-g', '--generations', default=None, type=int,
                           help='Number of generations.')
+    training.add_argument('-f', '--create-architecture-subfolder', action='store_true',
+                          help='Create subfolder in solutions folder, which correspond to selected architecture. Ignored if architecture is not specified.')
 
     rendering = parser.add_argument_group('render')
     rendering.add_argument('-d', '--no-render', action='store_true', default=False,
@@ -404,6 +433,9 @@ def parse_args(argv):
         args.height = args.width
 
     args.log_level = logging.getLevelNamesMapping()[args.log_level.upper()]
+
+    if args.architecture is not None:
+        args.architecture = args.architecture.strip()
 
     return args
 

@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-import enum
 from typing import Any, Generator
 import math
 import numpy as np
 import pygad.pygad.nn as pgnn
-from helpers import Serializable
+import re
+from helpers import Serializable, SmartEnum
 from helpers.cached import Cached
 
 @dataclass
@@ -18,7 +18,7 @@ class LayerArchitecture:
 class InputLayerArchitecture(LayerArchitecture):
     pass
 
-class ActivationFunction(enum.Enum):
+class ActivationFunction(SmartEnum):
     NONE = 'None'
     RELU = 'relu'
     SIGM = 'sigmoid'
@@ -29,7 +29,7 @@ class DenseLayerArchitecture(LayerArchitecture):
     f: ActivationFunction
     
     def __str__(self):
-        return super().__str__() + f" ({self.f.value})"
+        return super().__str__() + f" ({self.f.name.lower()})"
 
 @dataclass
 class NetworkArchitecture:
@@ -38,6 +38,22 @@ class NetworkArchitecture:
     
     def __str__(self):
         return ' x '.join([str(layer) for layer in [self.input_layer, *self.dense_layers]])
+
+    @staticmethod
+    def from_string(string: str):
+        string = string.replace(' ', '')
+        string.lower()
+        if string == 'linear':
+            string = ''
+        input, rest = re.compile(r'(?P<input>\d+)(?P<rest>.*)').fullmatch(string).groups()
+        input_layer = InputLayerArchitecture(int(input))
+        dense_layers = []
+        denses = rest.split('x')
+        assert denses[0] == ''
+        for dense in denses[1:]:
+            neurons, activation = re.compile(r'(?P<neurons>\d+)\((?P<activation>[a-z]+)\)').fullmatch(dense).groups()
+            dense_layers += [DenseLayerArchitecture(int(neurons), ActivationFunction.from_string(activation.upper()))]
+        return NetworkArchitecture(input_layer, dense_layers)
 
 @dataclass
 class NeuralNetwork(Serializable):

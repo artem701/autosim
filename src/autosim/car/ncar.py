@@ -17,6 +17,15 @@ class NetworkArchitecture(nn.NetworkArchitecture):
         output_layer = nn.DenseLayerArchitecture(n=len(OUTPUTS), f=output_activation)
         super().__init__(input_layer=input_layer, dense_layers=dense_layers+[output_layer])
 
+    @staticmethod
+    def from_string(string: str, output_activation: str):
+        string = string.strip()
+        if string == 'linear' or string == '':
+            string = ''
+        else:
+            string = f"x {string} "
+        return nn.NetworkArchitecture.from_string(f"{len(INPUTS)} {string} x 1 ({output_activation})")
+
 NeuralNetwork = nn.NeuralNetwork
 
 class NCar(Car):
