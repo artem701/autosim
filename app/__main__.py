@@ -48,12 +48,12 @@ def get_null_training_strategy():
 
 @strategy_value
 def get_cautious_training_strategy():
-    optimal_distance = 30
+    optimal_distance = 40
     estimation_strategy = e.EstimationStrategy(
         collision=e.Criteria(10000),
         distance=
-            e.LessCriteria(fine=0.001, reference=optimal_distance + 10) +
-            e.MoreCriteria(fine=0.001, reference=optimal_distance - 10),
+            e.LessCriteria(fine=0.001, reference=optimal_distance + 20) +
+            e.MoreCriteria(fine=0.001, reference=optimal_distance - 20),
         speed=e.LessCriteria(1, kph_to_mps(60))
         )
     return [
@@ -85,12 +85,13 @@ def get_cautious_training_strategy():
 @strategy_value
 def get_speedy_training_strategy():
     # estimation_strategy = e.EstimationStrategy(collision=e.Criteria(10000), speed=e.ReferenceCriteria(fine=0.01, reference=kph_to_mps(120)))
-    optimal_distance = 30
+    optimal_distance = 20
     estimation_strategy = e.EstimationStrategy(
         collision=e.Criteria(10000),
         distance=
          e.LessCriteria(fine=0.1, reference=optimal_distance + 10) + 
-         e.MoreCriteria(fine=0.1, reference=optimal_distance - 10)
+         e.MoreCriteria(fine=0.1, reference=optimal_distance - 10),
+         speed=e.MoreCriteria(fine=0.001, reference=60)
         )
     return [
         # learn to stop
@@ -152,14 +153,12 @@ def plot_fitness(path, session: t.TrainingSession):
     plt.savefig(path)
 
 @indent
-def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, population: int = None, generations: int = None, architecture_string: str = None, subfolder: bool = False):
+def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, population: int = None, generations: int = None, architecture_string: str = None):
     architecture_presented = architecture_string is not None
-    subfolder = subfolder and architecture_presented
     architecture = NetworkArchitecture.from_string(architecture_string or 'linear', 'sigm')
-    architecture_subpath = '.' if not subfolder else str(architecture)
 
-    solution_path = f"{path}/{architecture_subpath}/{strategy.name}.json"
-    fitness_path = f"{path}/{architecture_subpath}/{strategy.name}.jpg"
+    solution_path = f"{path}/{strategy.name}.json"
+    fitness_path = f"{path}/{strategy.name}.jpg"
 
     logging.info(f"get solution for {strategy.name} strategy")
     
@@ -191,7 +190,7 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
         plot_fitness(fitness_path, session)        
         logging.info(f"saved {strategy.name} fitness plot to \"{fitness_path}\"")
 
-    return solution
+    return solution, pathlib.Path(solution_path).parent
 
 def load(path: str):
     if not os.path.isfile(path):
@@ -255,7 +254,7 @@ def render(renderer: Renderer, dir: str, name: str):
 
 def action_train(args):
     for strategy in args.strategies:
-        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations, args.architecture, args.create_architecture_subfolder)
+        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations, args.architecture)
     action_render(args)
 
 def action_info(args):
@@ -395,8 +394,6 @@ def make_parser():
                           help='Size of population.')
     training.add_argument('-g', '--generations', default=None, type=int,
                           help='Number of generations.')
-    training.add_argument('-f', '--create-architecture-subfolder', action='store_true',
-                          help='Create subfolder in solutions folder, which correspond to selected architecture. Ignored if architecture is not specified.')
 
     rendering = parser.add_argument_group('render')
     rendering.add_argument('-d', '--no-render', action='store_true', default=False,
