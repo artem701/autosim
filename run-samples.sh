@@ -2,14 +2,8 @@
 
 source env.sh
 
-for i in `find samples -name '__main__.py'`; do
-    echo -e "\nrun $i\n"
-    python3 $i
-    code=$?
-    if [ $code -ne 0 ]; then
-        break
-    fi
-done;
+python3 app train -g 5 -p 5
+code=$?
 
 if [ $code -eq 0 ]; then
     echo -e '\nOK!'
