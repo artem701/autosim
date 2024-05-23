@@ -41,7 +41,7 @@ jobs:
         bash ./test.sh
     - name: Run samples
       run: |
-        python3 app train -g 5 -p 5
+        bash ./run-samples.sh
     - name: Benchmark
       run: |
         bash ./bench.sh
