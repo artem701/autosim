@@ -135,21 +135,16 @@ class Strategy(SmartEnum):
     speedy = partial(get_speedy_training_strategy)
     const60kph = partial(get_const60kph_training_strategy)
 
-def plot_fitness(path, session: t.TrainingSession):
-    fitness_min = [1 / fitness for fitness in session.ga.best_solutions_fitness[1:]]
-    # fitness_max = [1 / np.min(fitnesses) for fitnesses in session.ga.solutions_fitness[1:]]
-    # fitness_med = [1 / np.median(fitnesses) for fitnesses in session.ga.solutions_fitness[1:]]
+def plot_fitness(path, network: NeuralNetwork):
+    fitness_min = [1 / fitness for fitness in network.fitness]
     plt.clf()
     plt.title('Fitness over generations')
-    plt.plot(range(1, session.ga.generations_completed + 1), fitness_min, label='min')
-    # plt.plot(range(1, session.ga.generations_completed + 1), fitness_min, label='max')
-    # plt.plot(range(1, session.ga.generations_completed + 1), fitness_med, label='med')
-    # plt.legend()
+    plt.plot(fitness_min)
     plt.xlabel('generation')
     plt.ylabel('fine')
     plt.yscale('log')
     plt.grid(which='both')
-    plt.figtext(0.01, 0.01, f"population: {session.ga.sol_per_pop}\ngenerations: {session.ga.generations_completed}\narchitecture: {session.architecture}", fontsize=12, ha='left')
+    plt.figtext(0.01, 0.01, f"generations: {len(network.fitness)}\narchitecture: {network.architecture()}", fontsize=12, ha='left')
     plt.tight_layout(rect=[0, 0.1, 1, 1])
     plt.savefig(path)
 
@@ -182,13 +177,13 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
         if cont:
             logging.info(f"train solution from base: {solution_path}")
 
-        solution, session = train(solution, strategy, population, generations, architecture)
+        solution = train(solution, strategy, population, generations, architecture)
 
         os.makedirs(pathlib.Path(solution_path).parent, exist_ok=True)
         solution.to_file(solution_path)
         logging.info(f"written {strategy.name} solution to \"{solution_path}\"")
 
-        plot_fitness(fitness_path, session)        
+        plot_fitness(fitness_path, solution)        
         logging.info(f"saved {strategy.name} fitness plot to \"{fitness_path}\"")
 
     return solution, pathlib.Path(solution_path).parent
@@ -233,9 +228,9 @@ def train(base: NeuralNetwork, strategy: Strategy, population: int, generations:
     logging.info(f"best solution found in generation {session.ga.best_solution_generation} with fitness {solution_fitness} (fine {1 / solution_fitness if solution_fitness > 0 else '+inf'})")
 
     network = NeuralNetwork.from_vector(architecture=architecture, vector=solution)
-    network.fitness = solution_fitness
+    network.fitness = base.fitness + session.ga.best_solutions_fitness[1:]
 
-    return network, session
+    return network
 
 def estimate_population_generations(architecture: NetworkArchitecture, population: int = None, generations: int = None):
     K = 1.25
@@ -273,8 +268,9 @@ def action_info(args):
         def print_network(file):
             try:
                 network = NeuralNetwork.from_file(file)
+                fitness = network.fitness[-1] if isinstance(network.fitness, list) else network.fitness
                 logging.info(f"Architecture:   {network.architecture()}")
-                logging.info(f"Fitness:        {network.fitness:.3f} (fine {1 / network.fitness if network.fitness > 0 else '+inf':.3f})")
+                logging.info(f"Fitness:        {fitness:.3f} (fine {1 / fitness if fitness > 0 else '+inf':.3f})")
             except:
                 logging.warning('Failed to parse!')
 

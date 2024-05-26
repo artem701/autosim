@@ -59,7 +59,7 @@ class NetworkArchitecture:
 class NeuralNetwork(Serializable):
     output_layer: pgnn.DenseLayer
     _architecture: Cached[NetworkArchitecture] = field(default_factory=Cached)
-    fitness: float = math.nan
+    fitness: list[float] = field(default_factory=lambda:[])
     
     def __eq__(self, other: 'NeuralNetwork'):
         if self.architecture() != other.architecture():
