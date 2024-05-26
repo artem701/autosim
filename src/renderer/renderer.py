@@ -21,7 +21,7 @@ from simulation.object import Object
 
 class Renderer(Listener):
 
-    def __init__(self, fps=24, width=640, height=480):
+    def __init__(self, fps=24, width=640, height=480, text: str='n,x,d,vms,vkh'):
         self.frames = list[Frame]()
         self.fps = fps
         self.frame_dt = 1 / fps
@@ -31,6 +31,7 @@ class Renderer(Listener):
         self.last_frame_time = None
         self.space = None
         self.mapper = None
+        self.texts = [t.strip() for t in text.split(',')]
 
     def render(self, path: str):
 
@@ -92,17 +93,32 @@ class Renderer(Listener):
         text_duration = 5
         
         def text_common(body, drawable):
-            text = f"{drawable.name}: x={body.location.x():.2f} m"
-            if hasattr(body, 'd'):
-                text += f", d: {body.d:.2f}"
-            return text
+            # text = f"{drawable.name}: x={body.location.x():.2f} m"
+            texts = []
 
-        text_mapper = [
-            # mps
-            lambda body, drawable: f"{text_common(body, drawable)}, v={body.v:.2f} m/s",
-            # kph
-            lambda body, drawable: f"{text_common(body, drawable)}, v={mps_to_kph(body.v):.2f} km/h",
-        ]
+            if self.must_show_text('n'):
+                texts += [f"{drawable.name}"]
+
+            if self.must_show_text('x'):
+                texts += [f"x: {body.location.x():.2f} m"]
+
+
+            if self.must_show_text('d') and hasattr(body, 'd'):
+                texts += [f"d: {body.d:.2f}"]
+
+            return texts
+
+        text_mapper = []
+        show_speed=False
+        if self.must_show_text('vms'):
+            text_mapper.append(lambda body, drawable: [*text_common(body, drawable), f"v: {body.v:.2f} m/s"])
+            show_speed=True
+        if self.must_show_text('vkh'):
+            text_mapper.append(lambda body, drawable: [*text_common(body, drawable), f"v: {mps_to_kph(body.v):.2f} km/h"])
+            show_speed=True
+        if not show_speed:
+            text_mapper.append(lambda body, drawable: [*text_common(body, drawable)])
+
         pick_text = lambda t: text_mapper[math.floor(t / text_duration) % len(text_mapper)]
 
         if self.get_space(environment) is None:
@@ -118,10 +134,12 @@ class Renderer(Listener):
             cv2.circle(canvas, (drawable.x, drawable.y),
                        R, drawable.color, cv2.FILLED)
             if drawable.name is not None:
+                texts = pick_text(environment.time)(obj, drawable)
+                text = ', '.join(texts)
                 self.print(canvas,
                            drawable.x + math.ceil(R / 2),
                            drawable.y - math.ceil(R / 2),
-                           pick_text(environment.time)(obj, drawable))
+                           text)
 
         self.print(canvas, 1, 1, f"t = {environment.time:.2f} s")
         return canvas
@@ -205,3 +223,6 @@ class Renderer(Listener):
         y = max(h, min(y, self.height - 1))
 
         cv2.putText(canvas, text, (x, y), font, scale, color, thickness)
+
+    def must_show_text(self, text: str):
+        return text in self.texts

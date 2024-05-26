@@ -112,6 +112,22 @@ def indent(func, /, logger: logging.Logger = None):
     
     return wrap(func)
 
+def time_to_str(time: float):
+    h = 0
+    if time > 3600:
+        h = int(time / 3600)
+        time = time - h * 3600
+    
+    m = 0
+    if time > 60:
+        m = int(time / 60)
+        time = time - m * 60
+    
+    string = f"{h}h {m}m {time:.3f}s"
+    string = string.removeprefix('0h ')
+    string = string.removeprefix('0m ')
+    return string
+
 def measure_time(func, /, level=logging.INFO):
     def wrap(func):
         def measure_time(*args, **kwargs):
@@ -129,7 +145,7 @@ def measure_time(func, /, level=logging.INFO):
             ret = call()
             end = time.time()
 
-            logging.log(level=level, msg=f"┴ finished {func.__name__} in {end - start:.2f} seconds")
+            logging.log(level=level, msg=f"┴ finished {func.__name__} in {time_to_str(end - start)}")
 
             return ret
         return measure_time

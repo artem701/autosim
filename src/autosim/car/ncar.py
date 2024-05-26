@@ -43,8 +43,8 @@ class NCar(Car):
             dv = next.v - next.v
         else:
             # TODO: something better? How to find front if you are not on the body list yet?
-            dx = sys.float_info.max
-            dv = sys.float_info.max
+            dx = 1000
+            dv = 0
         decision = self.network.predict([dx, dv, self.v])[0]
         d = bound(decision * 2 - 1, -1, 1)
         self.d = d

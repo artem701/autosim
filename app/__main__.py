@@ -19,6 +19,7 @@ import numpy as np
 import os
 import pathlib
 import sys
+import warnings
 
 import logging
 
@@ -26,16 +27,20 @@ L = 500
 T_TRAINING = 60
 BOUND = (-1, 1)
 
-def get_testing_simulation_parameters(solution, renderer):
+def get_testing_simulation_parameters(solution, renderer, strategy):
     CARS_TESTED = 5
     T_RENDER = 3 * T_TRAINING
+    objects = []
     students = [c.NCar(network=solution,
                        name=f"student-{i}",
                        location = Circle(CircleSpace(L), i * L / (CARS_TESTED + 1)))
                 for i in range(CARS_TESTED)]            
-    
-    dummy = DummyCar(location = Circle(CircleSpace(L), CARS_TESTED * L / (CARS_TESTED + 1)), name = 'dummy')
-    return s.SimulationParameters(timeout=T_RENDER, objects = [*students, dummy, renderer])
+    objects += students
+    if strategy != 'const60kph':
+        dummy = DummyCar(location = Circle(CircleSpace(L), CARS_TESTED * L / (CARS_TESTED + 1)), name = 'dummy')
+        objects += [dummy]
+    objects += [renderer]
+    return s.SimulationParameters(timeout=T_RENDER, objects = objects)
 
 def strategy_value(func):
     def wrapper(ga, agg):
@@ -45,6 +50,27 @@ def strategy_value(func):
 @strategy_value
 def get_null_training_strategy():
     return []
+
+@strategy_value
+def get_const60kph_training_strategy():
+    estimation_strategy = e.EstimationStrategy(
+        collision=e.Criteria(10000),
+        speed=e.ReferenceCriteria(0.1, kph_to_mps(60))
+        )
+    return [
+        t.TrainingSuite(estimation=estimation_strategy,
+                        simulation=s.SimulationParameters(
+                            timeout=T_TRAINING,
+                            objects=[]
+                            )
+                        ),
+        t.TrainingSuite(estimation=estimation_strategy,
+                        simulation=s.SimulationParameters(
+                            timeout=T_TRAINING,
+                            objects=[c.ACar(function='1', mode=c.ACar.Mode.ACCELERATION, location=Line(100))]
+                            )
+                        ),
+        ]
 
 @strategy_value
 def get_cautious_training_strategy():
@@ -72,14 +98,6 @@ def get_cautious_training_strategy():
                             objects=[c.ACar(f"{kph_to_mps(60)} * dt", c.ACar.Mode.MOVEMENT, location=Line(optimal_distance), name='trainer')]
                             )
                         ),
-
-        # # just follow trainer
-        # t.TrainingSuite(estimation=estimation_strategy,
-        #                 simulation=s.SimulationParameters(
-        #                     timeout=T_TRAINING,
-        #                     objects=[DummyCar(location=Line(optimal_distance), name='trainer')]
-        #                     )
-        #                 ),
         ]
 
 @strategy_value
@@ -109,45 +127,28 @@ def get_speedy_training_strategy():
                             objects=[c.ACar(f"{kph_to_mps(60)} * dt", c.ACar.Mode.MOVEMENT, location=Line(L // 6), name='trainer')]
                             )
                         ),
-        
-        # t.TrainingSuite(estimation=estimation_strategy,
-        #                 simulation=s.SimulationParameters(
-        #                     timeout=T_TRAINING,
-        #                     objects=[c.ACar('0', c.ACar.Mode.MOVEMENT, location=Line(1000), name='trainer')]
-        #                     )
-        #                 ),
-        # t.TrainingSuite(estimation=estimation_strategy,
-        #                 simulation=s.SimulationParameters(
-        #                     timeout=T_TRAINING,
-        #                     objects=[c.ACar(f"{kph_to_mps(60)} * dt", c.ACar.Mode.MOVEMENT, location=Line(100), name='trainer')]
-        #                     )
-        #                 ),
-        # t.TrainingSuite(estimation=estimation_strategy,
-        #                 simulation=s.SimulationParameters(
-        #                     timeout=T_TRAINING,
-        #                     objects=[]
-        #                     )
-        #                ),
-        # t.TrainingSuite(estimation=estimation_strategy,
-        #                 simulation=s.SimulationParameters(
-        #                     timeout=T_TRAINING,
-        #                     objects=[DummyCar(location=Line(100), name='trainer')]
-        #                     )
-        #                 ),
         ]
 
 class Strategy(SmartEnum):
     null = partial(get_null_training_strategy)
     cautious = partial(get_cautious_training_strategy)
     speedy = partial(get_speedy_training_strategy)
+    const60kph = partial(get_const60kph_training_strategy)
 
 def plot_fitness(path, session: t.TrainingSession):
-    fitness = [1 / fitness for fitness in session.ga.best_solutions_fitness[1:]]
+    fitness_min = [1 / fitness for fitness in session.ga.best_solutions_fitness[1:]]
+    # fitness_max = [1 / np.min(fitnesses) for fitnesses in session.ga.solutions_fitness[1:]]
+    # fitness_med = [1 / np.median(fitnesses) for fitnesses in session.ga.solutions_fitness[1:]]
     plt.clf()
     plt.title('Fitness over generations')
-    plt.plot(range(1, session.ga.generations_completed + 1), fitness)
+    plt.plot(range(1, session.ga.generations_completed + 1), fitness_min, label='min')
+    # plt.plot(range(1, session.ga.generations_completed + 1), fitness_min, label='max')
+    # plt.plot(range(1, session.ga.generations_completed + 1), fitness_med, label='med')
+    # plt.legend()
     plt.xlabel('generation')
     plt.ylabel('fine')
+    plt.yscale('log')
+    plt.grid(which='both')
     plt.figtext(0.01, 0.01, f"population: {session.ga.sol_per_pop}\ngenerations: {session.ga.generations_completed}\narchitecture: {session.architecture}", fontsize=12, ha='left')
     plt.tight_layout(rect=[0, 0.1, 1, 1])
     plt.savefig(path)
@@ -214,9 +215,12 @@ def train(base: NeuralNetwork, strategy: Strategy, population: int, generations:
         on_start=lambda ga:logging.info(f"genetic algorithm started"),
         on_stop=lambda ga,fitnesses:logging.info(f"genetic algorithm stopped"),
         on_generation=lambda ga:logging.info(f"finished {ga.generations_completed:3>}/{generations} generations (fine: {1 / np.max(ga.last_generation_fitness):.3f})"),
-        parallel_processing=('thread', 4),
+        # parallel_processing=('thread', 4),
+        parallel_processing=None,
         crossover_type='uniform',
+        suppress_warnings=True,
         )
+    warnings.filterwarnings('ignore')
     # agg = t.SuiteAggregationStrategy.SUM_FINES    
     agg = t.SuiteAggregationStrategy.MAX_FINE    
     
@@ -241,8 +245,8 @@ def estimate_population_generations(architecture: NetworkArchitecture, populatio
     return population, generations
 
 @measure_time
-def simulate(network: NeuralNetwork, renderer: Renderer):
-    parameters = get_testing_simulation_parameters(network, renderer)
+def simulate(network: NeuralNetwork, renderer: Renderer, strategy: str):
+    parameters = get_testing_simulation_parameters(network, renderer, strategy)
     autosim.simulate(parameters)
     logging.info( f"simulated {parameters.timeout}s ({renderer.fps * parameters.timeout} {renderer.width}x{renderer.height} frames)")
 
@@ -270,7 +274,7 @@ def action_info(args):
             try:
                 network = NeuralNetwork.from_file(file)
                 logging.info(f"Architecture:   {network.architecture()}")
-                logging.info(f"Fitness:        {network.fitness}")
+                logging.info(f"Fitness:        {network.fitness:.3f} (fine {1 / network.fitness if network.fitness > 0 else '+inf':.3f})")
             except:
                 logging.warning('Failed to parse!')
 
@@ -294,7 +298,9 @@ def action_render(args):
     if path.is_file():
         files = [path]
     else:
-        files = list(path.glob('*.json'))
+        files = []
+        for strategy in args.strategies:
+            files += list(path.glob(f"{strategy.name}.json"))
 
     solutions = [load(file) for file in files]
 
@@ -302,14 +308,19 @@ def action_render(args):
         logging.error(f"No solutions found in \"{path}\"")
 
     for solution, file in zip(solutions, files):
-        renderer = Renderer(args.fps, args.width, args.height)
-        simulate(solution, renderer)
+        renderer = Renderer(args.fps, args.width, args.height, args.text)
+        simulate(solution, renderer, file.stem)
         render(renderer, file.parent, file.stem)
+
+def action_help(parser):
+    parser.print_help()
+    exit(0)
 
 class Action(SmartEnum):
     train = partial(action_train)
     render = partial(action_render)
     info = partial(action_info)
+    help = partial(action_help)
 
 @measure_time
 def everything(args):
@@ -378,10 +389,10 @@ def make_parser():
     training = parser.add_argument_group('train')
     training.add_argument('-a', '--architecture', default=None,
                           help=
-                          'Network architecture in following format: <neurons> (<activation>) [x ...] '
-                          'For example: 4 (relu) x 3 (sigm)'
-                          f"Available activations: {','.join([item.name.lower() for item in ActivationFunction])} "
-                          'If -c is specified and base solution exists, error is emitted.'
+                          'Network architecture in following format: <neurons> (<activation>) [x ...]. '
+                          'For example: 4 (relu) x 3 (sigm). '
+                          f"Available activations: {', '.join([item.name.lower() for item in ActivationFunction])}. "
+                          'If -c is specified and base solution exists, error is emitted. '
                           'Default architecture is linear (sigmoid at the end is always presented for normalization). '
                           )
     training.add_argument('-n', '--new', action='store_true', default=False,
@@ -404,6 +415,8 @@ def make_parser():
                            help='Picture width.')
     rendering.add_argument('--height', default=None,
                            help='Picture height. Equals to width by default.')
+    rendering.add_argument('-t', '--text', default='n,x,d,vkh',
+                           help='Rendered text. Available options: n,x,d,vms,vkh.')
 
     other = parser.add_argument_group('other')
     other.add_argument('-l', '--log-level', default='info',
@@ -417,9 +430,8 @@ def parse_args(argv):
     parser = make_parser()
     args = parser.parse_args(argv[1:])
 
-    if args.help:
-        parser.print_help()
-        exit(0)
+    if args.help or args.action == 'help':
+        action_help(parser)
 
     args.solutions = os.path.abspath(args.solutions)
 

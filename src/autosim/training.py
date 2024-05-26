@@ -167,9 +167,9 @@ def make_fitness(context: TrainingContext):
       nonlocal context
       strategy = context.strategy
       network = NeuralNetwork.from_vector(context.architecture, solution)
-      car = NCar(network=network, location=Line(0), spec=strategy.spec, f=strategy.friction)
       fitnesses = []
       for suite in strategy.suites:
+         car = NCar(network=network, location=Line(0), spec=strategy.spec, f=strategy.friction)
          fitnesses += [autosim.fitness(car, simulation_parameters=suite.simulation, strategy=suite.estimation)]
       return strategy.aggregation(fitnesses)
    return fitness

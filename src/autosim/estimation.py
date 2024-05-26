@@ -64,12 +64,7 @@ class EstimatorObject(eventloop.Listener):
 
     def accept(self, event: Event):
         if isinstance(event, Tick):
-            env = event.environment
-            if self.first:
-                self.dt = env.dt
-                self.first = False
-            else:
-                self.fine += self.periodical_fine(env)
+            self.fine += self.periodical_fine(event.environment)
 
         if isinstance(event, Collision):
             if event.collider is not self.target:
