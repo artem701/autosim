@@ -108,7 +108,7 @@ def get_speedy_training_strategy():
         collision=e.Criteria(10000),
         distance=
          e.LessCriteria(fine=0.1, reference=optimal_distance + 10) + 
-         e.MoreCriteria(fine=0.1, reference=optimal_distance - 10),
+         e.MoreCriteria(fine=0.5, reference=optimal_distance - 10),
          speed=e.MoreCriteria(fine=0.001, reference=60)
         )
     return [
@@ -116,7 +116,7 @@ def get_speedy_training_strategy():
         t.TrainingSuite(estimation=estimation_strategy,
                         simulation=s.SimulationParameters(
                             timeout=T_TRAINING,
-                            objects=[c.ACar('0', c.ACar.Mode.MOVEMENT, location=Line(L // 6), name='trainer')]
+                            objects=[c.ACar('0', c.ACar.Mode.MOVEMENT, location=Line(L), name='trainer')]
                             )
                         ),
 
@@ -124,7 +124,7 @@ def get_speedy_training_strategy():
         t.TrainingSuite(estimation=estimation_strategy,
                         simulation=s.SimulationParameters(
                             timeout=T_TRAINING,
-                            objects=[c.ACar(f"{kph_to_mps(60)} * dt", c.ACar.Mode.MOVEMENT, location=Line(L // 6), name='trainer')]
+                            objects=[c.ACar(f"{kph_to_mps(60)} * dt", c.ACar.Mode.MOVEMENT, location=Line(L), name='trainer')]
                             )
                         ),
         ]

@@ -14,7 +14,7 @@ class Characteristics:
 LADA_GRANTA = Characteristics(
     mass=1100,
     thrust=750,
-    mbreak=0.5,
+    mbreak=1.2,
     front_area=2.25,
     streamlining=0.36
 )
@@ -22,7 +22,7 @@ LADA_GRANTA = Characteristics(
 TEST = Characteristics(
     mass=1000,
     thrust=2250,
-    mbreak=0.5,
+    mbreak=1.2,
     front_area=2.25,
     streamlining=0.36
 )

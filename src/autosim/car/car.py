@@ -62,7 +62,7 @@ class Car(Body):
             # ref https://studref.com/596310/tehnika/sily_deystvuyuschie_avtomobil_pryamolineynom_dvizhenii
             F_thrust = d_pos * self.spec.thrust
             F_frict = self.f * (1 + (v**2) / 1500) * self.N
-            F_break = d_neg * self.spec.mbreak * (1 + (v**2) / 1500) * self.N * self.f / Friction.ASPHALT
+            F_break = d_neg * self.spec.mbreak * self.N * self.f / Friction.ASPHALT
             F_air = self.spec.front_area * self.spec.streamlining * (v**2)
             
             result = F_thrust - F_frict - F_break - F_air
