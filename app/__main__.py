@@ -2,7 +2,7 @@
 from dummy import DummyCar
 from functools import partial
 import autosim
-from autosim.car.ncar import NetworkArchitecture, NeuralNetwork
+from autosim.car.ncar import NetworkArchitecture, NeuralNetwork, INPUTS
 from autosim.nn import DenseLayerArchitecture, ActivationFunction
 import autosim.training as t
 import autosim.estimation as e
@@ -153,8 +153,9 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
     architecture_presented = architecture_string is not None
     architecture = NetworkArchitecture.from_string(architecture_string or 'linear', 'sigm')
 
-    solution_path = f"{path}/{strategy.name}.json"
-    fitness_path = f"{path}/{strategy.name}.jpg"
+    solution_path = f"{path}\\{strategy.name}.json"
+    fitness_path = f"{path}\\{strategy.name}.jpg"
+    network_html_path = f"{path}\\{strategy.name}.html"
 
     logging.info(f"get solution for {strategy.name} strategy")
     
@@ -185,6 +186,9 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
 
         plot_fitness(fitness_path, solution)        
         logging.info(f"saved {strategy.name} fitness plot to \"{fitness_path}\"")
+
+        solution.draw(network_html_path, INPUTS)
+        logging.info(f"saved {strategy.name} network graph to \"{network_html_path}\"")
 
     return solution, pathlib.Path(solution_path).parent
 

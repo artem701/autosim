@@ -40,7 +40,7 @@ class NCar(Car):
         next = self.next(environment=environment)
         if next is not None:
             dx = self.location.distance(next.location)
-            dv = next.v - next.v
+            dv = self.v - next.v
         else:
             # TODO: something better? How to find front if you are not on the body list yet?
             dx = 1000

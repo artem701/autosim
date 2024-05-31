@@ -6,6 +6,7 @@ import pygad.pygad.nn as pgnn
 import re
 from helpers import Serializable, SmartEnum
 from helpers.cached import Cached
+import pyvis.network
 
 @dataclass
 class LayerArchitecture:
@@ -97,6 +98,9 @@ class NeuralNetwork(Serializable):
         yield layer
         assert isinstance(layer, pgnn.InputLayer)
 
+    def layers(self) -> Generator[pgnn.DenseLayer | pgnn.InputLayer, Any, None]:
+        return reversed(list(self.layers_reversed()))
+
     def as_vector(self):
         vector = []
         for layer in self.layers_reversed():
@@ -126,7 +130,7 @@ class NeuralNetwork(Serializable):
 
     def architecture(self) -> NetworkArchitecture:
         def getter():
-            layers = reversed(list(self.layers_reversed()))
+            layers = self.layers()
             input_layer = next(layers)
             return NetworkArchitecture(
                 input_layer=InputLayerArchitecture(n=input_layer.num_neurons),
@@ -135,3 +139,45 @@ class NeuralNetwork(Serializable):
                     for layer in layers
                     ])
         return self._architecture.get(getter)
+
+    def draw(self, output: str, inputs = None):
+        if inputs:
+            inputs = list(inputs) + ['1']
+        def get_input(i):
+            if inputs and len(inputs) > i:
+                return inputs[i]
+            else:
+                return ''
+        def chunks(array, n):
+            k = len(array) // n
+            for i in range(n):
+                yield array[k * i:k * i + k]
+
+        g = pyvis.network.Network()
+        layers = list(self.layers())
+        for i in range(len(layers)):
+            H = 250
+            V = 100
+            x = i * H
+            layer = layers[i]
+            def y(j):
+                num = layer.num_neurons + 1
+                if i == len(layers) - 1:
+                    num -= 1
+
+                amp = num * V / 2
+                return -amp + j * V
+
+            for j in range(layer.num_neurons):
+                if i == 0:
+                    g.add_node(f"{(i, j)}", label=get_input(j), physics=False, x=x, y=y(j))
+                else:
+                    g.add_node(f"{(i, j)}", label=layer.activation_function, physics=False, x=x, y=y(j))
+                    for k in range(layer.previous_layer.num_neurons + 1):
+                        w = layer.trained_weights[k][j]
+                        g.add_edge(f"{(i, j)}", f"{(i - 1, k)}", title=f"{w}", value=abs(w), color='blue' if w <= 0 else 'orange', physics=False)
+            if i < len(layers) - 1:
+                g.add_node(f"{(i, layer.num_neurons)}", label='1', physics=False, x=x, y=y(layer.num_neurons))
+        g.write_html(output, notebook=False, open_browser=False)
+
+
