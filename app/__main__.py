@@ -55,7 +55,7 @@ def get_null_training_strategy():
 def get_const60kph_training_strategy():
     estimation_strategy = e.EstimationStrategy(
         collision=e.Criteria(10000),
-        speed=e.ReferenceCriteria(0.1, kph_to_mps(60))
+        speed=e.ReferenceCriteria(0.01, kph_to_mps(60))
         )
     return [
         t.TrainingSuite(estimation=estimation_strategy,
@@ -68,6 +68,12 @@ def get_const60kph_training_strategy():
                         simulation=s.SimulationParameters(
                             timeout=T_TRAINING,
                             objects=[c.ACar(function='1', mode=c.ACar.Mode.ACCELERATION, location=Line(100))]
+                            )
+                        ),
+        t.TrainingSuite(estimation=estimation_strategy,
+                        simulation=s.SimulationParameters(
+                            timeout=T_TRAINING,
+                            objects=[c.ACar(function=f"{kph_to_mps(60)} * dt", mode=c.ACar.Mode.MOVEMENT, location=Line(100))]
                             )
                         ),
         ]

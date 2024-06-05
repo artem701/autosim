@@ -63,7 +63,7 @@ class Car(Body):
             F_thrust = d_pos * self.spec.thrust
             F_frict = self.f * (1 + (v**2) / 1500) * self.N
             F_break = d_neg * self.spec.mbreak * self.N * self.f / Friction.ASPHALT
-            F_air = self.spec.front_area * self.spec.streamlining * (v**2)
+            F_air = self.spec.front_area * self.spec.streamlining * self.AIR_DENSITY * (v**2)
             
             result = F_thrust - F_frict - F_break - F_air
             

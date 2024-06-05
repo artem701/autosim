@@ -5,7 +5,6 @@ import eventloop
 import helpers
 import simulation.environment.events
 import simulation.location
-import logging
 
 from dataclasses import dataclass, field
 from eventloop.eventloop import Event, Terminate
@@ -28,13 +27,14 @@ class LambdaCriteria(Criteria):
 @dataclass
 class ValueCriteria(Criteria):
     def get_fine(self, value):
-        return super().get_fine()
+        return super().get_fine() * value
 
 @dataclass
 class ReferenceCriteria(ValueCriteria):
     reference: float
     def get_fine(self, value: float):
-        return super().get_fine(value) * abs(value - self.reference)
+        # return super().get_fine((value - self.reference) ** 2)
+        return super().get_fine(abs(value - self.reference))
 
 @dataclass
 class LessCriteria(ReferenceCriteria):
