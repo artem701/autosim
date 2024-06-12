@@ -146,6 +146,9 @@ class Renderer(Listener):
                            text)
 
         self.print(canvas, 1, 1, f"t = {environment.time:.2f} s")
+        if self.last_ncarwatcher_update:
+            self.print(canvas, 1, 21, f"Vavg  = {self.last_ncarwatcher_update.v_avg:.2f} m/s")
+            self.print(canvas, 1, 41, f"U+int = {self.last_ncarwatcher_update.u_pos_dt_int:.2f}")
         return canvas
 
     def create_canvas(self):
@@ -213,9 +216,6 @@ class Renderer(Listener):
         cx, cy, r = self.circle()
         cv2.circle(canvas, (cx, cy), r, (0, 0, 0), 2)
         self.print(canvas, 1, self.height - 2, f"R = {r:.2f}m")
-        if self.last_ncarwatcher_update:
-            self.print(canvas, 1, self.height - 22, f"Vavg  = {self.last_ncarwatcher_update.v_avg:.2f} m/s")
-            self.print(canvas, 1, self.height - 42, f"U+int = {self.last_ncarwatcher_update.u_pos_dt_int:.2f}")
 
 
     def print(self, canvas, x, y, text):
