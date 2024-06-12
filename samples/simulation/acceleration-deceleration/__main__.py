@@ -45,7 +45,7 @@ class TestCar(autosim.car.Car):
                 self.v_previous = None
             else:
                 self.v_previous = self.v
-                self.d = 1
+                self.u = 1
 
         if self.state == State.RELEASE_UNTIL_STOP:
             if self.t_start is None:
@@ -60,7 +60,7 @@ class TestCar(autosim.car.Car):
                 self.breaking_distance = None
                 self.state += 1
             else:
-                self.d = 0
+                self.u = 0
 
         if self.state == State.BREAK_UNTIL_STOP:
             if self.t_start is None:
@@ -75,13 +75,13 @@ class TestCar(autosim.car.Car):
                 self.breaking_distance = None
                 self.state += 1
             else:
-                self.d = -1
+                self.u = -1
     
         if self.state == State.TERMINATE:
-            del self.d
+            del self.u
             return Terminate(immediate=False)
 
-        move = self.accelerate(self.d, environment.dt)
+        move = self.accelerate(self.u, environment.dt)
 
         if self.breaking_distance is not None:
             self.breaking_distance += move.dx

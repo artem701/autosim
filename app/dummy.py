@@ -72,11 +72,11 @@ class DummyCar(c.Car):
 
         state = self.state.value
         if dt < state.t:
-            self.d = state.f(dt)
+            self.u = state.f(dt)
         else:
             self.next_state()
 
-        return self.accelerate(self.d, environment.dt)
+        return self.accelerate(self.u, environment.dt)
     
     def accept(self, event: Event) -> list[Event]:
         if isinstance(event, Collision):

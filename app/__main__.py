@@ -3,6 +3,7 @@ from dummy import DummyCar
 from functools import partial
 import autosim
 from autosim.car.ncar import NetworkArchitecture, NeuralNetwork, INPUTS
+from autosim import NCarWatcher 
 from autosim.nn import DenseLayerArchitecture, ActivationFunction
 import autosim.training as t
 import autosim.estimation as e
@@ -39,7 +40,7 @@ def get_testing_simulation_parameters(solution, renderer, strategy):
     if strategy != 'const60kph':
         dummy = DummyCar(location = Circle(CircleSpace(L), CARS_TESTED * L / (CARS_TESTED + 1)), name = 'dummy')
         objects += [dummy]
-    objects += [renderer]
+    objects += [renderer, NCarWatcher()]
     return s.SimulationParameters(timeout=T_RENDER, objects = objects)
 
 def strategy_value(func):
@@ -421,8 +422,8 @@ def make_parser():
                            help='Picture width.')
     rendering.add_argument('--height', default=None,
                            help='Picture height. Equals to width by default.')
-    rendering.add_argument('-t', '--text', default='n,x,d,vkh',
-                           help='Rendered text. Available options: n,x,d,vms,vkh.')
+    rendering.add_argument('-t', '--text', default='n,x,u,vkh',
+                           help='Rendered text. Available options: n,x,u,vms,vkh.')
 
     other = parser.add_argument_group('other')
     other.add_argument('-l', '--log-level', default='info',

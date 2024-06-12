@@ -54,9 +54,9 @@ class Car(Body):
         if isinstance(event, RemoveListener) and isinstance(event.listener, Body):
             self._next.unset()
 
-    def get_force(self, d: float):
-        d_pos = d if d > 0 else 0
-        d_neg = -d if d < 0 else 0
+    def get_force(self, u: float):
+        d_pos = u if u > 0 else 0
+        d_neg = -u if u < 0 else 0
 
         def force(t, x, v):
             # ref https://studref.com/596310/tehnika/sily_deystvuyuschie_avtomobil_pryamolineynom_dvizhenii
@@ -71,8 +71,8 @@ class Car(Body):
 
         return force
         
-    def accelerate(self, d: float, dt: float) -> Move:
-        return self.push(dt, self.get_force(d))
+    def accelerate(self, u: float, dt: float) -> Move:
+        return self.push(dt, self.get_force(u))
 
     @not_implemented
     def update(self, environment: Environment) -> Event:

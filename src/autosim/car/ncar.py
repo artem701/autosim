@@ -8,7 +8,7 @@ from simulation.location import Location, Line
 import autosim.nn as nn
 
 INPUTS = 'dx', 'dv', 'v'
-OUTPUTS = 'd'
+OUTPUTS = 'u'
 
 class NetworkArchitecture(nn.NetworkArchitecture):
   
@@ -34,7 +34,7 @@ class NCar(Car):
         super().__init__(location=location, spec=spec, f=f, name=name)
         assert isinstance(network, NeuralNetwork)
         self.network = network
-        self.d = 0
+        self.u = 0
 
     def update(self, environment: Environment):
         next = self.next(environment=environment)
@@ -46,6 +46,6 @@ class NCar(Car):
             dx = 1000
             dv = 0
         decision = self.network.predict([dx, dv, self.v])[0]
-        d = bound(decision * 2 - 1, -1, 1)
-        self.d = d
-        return self.accelerate(d, environment.dt)
+        u = bound(decision * 2 - 1, -1, 1)
+        self.u = u
+        return self.accelerate(u, environment.dt)

@@ -1,6 +1,7 @@
 
 import math
 from autosim.car.ncar import NCar
+from autosim.ncarwatcher.events import NCarWatcherUpdate
 from eventloop.eventloop import Event, Listener
 from helpers.functions import mps_to_kph, not_implemented
 from renderer.frame import copy_frame
@@ -21,7 +22,7 @@ from simulation.object import Object
 
 class Renderer(Listener):
 
-    def __init__(self, fps=24, width=640, height=480, text: str='n,x,d,vms,vkh'):
+    def __init__(self, fps=24, width=640, height=480, text: str='n,x,u,vms,vkh'):
         self.frames = list[Frame]()
         self.fps = fps
         self.frame_dt = 1 / fps
@@ -32,6 +33,7 @@ class Renderer(Listener):
         self.space = None
         self.mapper = None
         self.texts = [t.strip() for t in text.split(',')]
+        self.last_ncarwatcher_update: NCarWatcherUpdate = None
 
     def render(self, path: str):
 
@@ -49,11 +51,13 @@ class Renderer(Listener):
         return path
 
     def input_events(self) -> set:
-        return Tick
+        return Tick, NCarWatcherUpdate
 
     def accept(self, event: Event) -> list[Event]:
         if isinstance(event, Tick):
             self.handle_tick(event.environment)
+        if isinstance(event, NCarWatcherUpdate):
+            self.last_ncarwatcher_update = event
 
     def handle_tick(self, environment: Environment) -> list[FrameRendered]:
         frames_needed = 0
@@ -103,8 +107,8 @@ class Renderer(Listener):
                 texts += [f"x: {body.location.x():.2f} m"]
 
 
-            if self.must_show_text('d') and hasattr(body, 'd'):
-                texts += [f"d: {body.d:.2f}"]
+            if self.must_show_text('u') and hasattr(body, 'u'):
+                texts += [f"u: {body.u:.2f}"]
 
             return texts
 
@@ -209,6 +213,10 @@ class Renderer(Listener):
         cx, cy, r = self.circle()
         cv2.circle(canvas, (cx, cy), r, (0, 0, 0), 2)
         self.print(canvas, 1, self.height - 2, f"R = {r:.2f}m")
+        if self.last_ncarwatcher_update:
+            self.print(canvas, 1, self.height - 22, f"Vavg  = {self.last_ncarwatcher_update.v_avg:.2f} m/s")
+            self.print(canvas, 1, self.height - 42, f"U+int = {self.last_ncarwatcher_update.u_pos_dt_int:.2f}")
+
 
     def print(self, canvas, x, y, text):
         font = cv2.FONT_HERSHEY_PLAIN
