@@ -2,7 +2,7 @@
 
 source env.sh
 
-python3 app train -g 2 -p 2
+python3 app train -g 2 -p 2 -s cautious
 code=$?
 
 if [ $code -eq 0 ]; then

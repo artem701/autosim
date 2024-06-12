@@ -1,13 +1,14 @@
+argparse
 cexprtk==0.4.1
 coverage
 distinctipy==1.2.3
 jsonpickle==3.0.2
+logging
 numpy==1.25.2
 opencv_python==4.8.1.78
 pyinstrument==4.6.0
 pytest-benchmark
 pytest-timeout
 pytest==7.4.2
-# pygad
 matplotlib
 cloudpickle
