@@ -147,8 +147,8 @@ class Renderer(Listener):
 
         self.print(canvas, 1, 1, f"t = {environment.time:.2f} s")
         if self.last_ncarwatcher_update:
-            self.print(canvas, 1, 21, f"Vavg  = {self.last_ncarwatcher_update.v_avg:.2f} m/s")
-            self.print(canvas, 1, 41, f"U+int = {self.last_ncarwatcher_update.u_pos_dt_int:.2f}")
+            self.print(canvas, 1, 16 + 20, f"Vavg  = {mps_to_kph(self.last_ncarwatcher_update.v_avg):.2f} km/h")
+            self.print(canvas, 1, 16 + 40, f"U+int = {self.last_ncarwatcher_update.u_pos_dt_int:.2f}")
         return canvas
 
     def create_canvas(self):

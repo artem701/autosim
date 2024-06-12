@@ -28,8 +28,9 @@ L = 500
 T_TRAINING = 60
 BOUND = (-1, 1)
 
-def get_testing_simulation_parameters(solution, renderer, strategy):
-    CARS_TESTED = 5
+def get_testing_simulation_parameters(solution, renderer, strategy, no_dummy):
+    DISTANCE = 20
+    CARS_TESTED = L // DISTANCE if no_dummy else 5
     T_RENDER = 3 * T_TRAINING
     objects = []
     students = [c.NCar(network=solution,
@@ -37,7 +38,7 @@ def get_testing_simulation_parameters(solution, renderer, strategy):
                        location = Circle(CircleSpace(L), i * L / (CARS_TESTED + 1)))
                 for i in range(CARS_TESTED)]            
     objects += students
-    if strategy != 'const60kph':
+    if strategy != 'const60kph' and not no_dummy:
         dummy = DummyCar(location = Circle(CircleSpace(L), CARS_TESTED * L / (CARS_TESTED + 1)), name = 'dummy')
         objects += [dummy]
     objects += [renderer, NCarWatcher()]
@@ -251,8 +252,8 @@ def estimate_population_generations(architecture: NetworkArchitecture, populatio
     return population, generations
 
 @measure_time
-def simulate(network: NeuralNetwork, renderer: Renderer, strategy: str):
-    parameters = get_testing_simulation_parameters(network, renderer, strategy)
+def simulate(network: NeuralNetwork, renderer: Renderer, strategy: str, no_dummy: bool):
+    parameters = get_testing_simulation_parameters(network, renderer, strategy, no_dummy)
     autosim.simulate(parameters)
     logging.info( f"simulated {parameters.timeout}s ({renderer.fps * parameters.timeout} {renderer.width}x{renderer.height} frames)")
 
@@ -316,8 +317,8 @@ def action_render(args):
 
     for solution, file in zip(solutions, files):
         renderer = Renderer(args.fps, args.width, args.height, args.text)
-        simulate(solution, renderer, file.stem)
-        render(renderer, file.parent, file.stem)
+        simulate(solution, renderer, file.stem, args.no_dummy)
+        render(renderer, file.parent, file.stem + ('-no-dummy' if args.no_dummy else ''))
 
 def action_help(parser):
     parser.print_help()
@@ -416,14 +417,16 @@ def make_parser():
     rendering = parser.add_argument_group('render')
     rendering.add_argument('-d', '--no-render', action='store_true', default=False,
                            help='Skip rendering solutions.')
-    rendering.add_argument('--fps', default=24,
+    rendering.add_argument('--fps', default=24, type=int,
                            help='Frames per second.')
-    rendering.add_argument('--width', default=768,
+    rendering.add_argument('--width', default=768, type=int,
                            help='Picture width.')
     rendering.add_argument('--height', default=None,
                            help='Picture height. Equals to width by default.')
     rendering.add_argument('-t', '--text', default='n,x,u,vkh',
                            help='Rendered text. Available options: n,x,u,vms,vkh.')
+    rendering.add_argument('--no-dummy', default=False, action='store_true',
+                           help='Do not use dummy for simulations.')
 
     other = parser.add_argument_group('other')
     other.add_argument('-l', '--log-level', default='info',

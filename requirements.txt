@@ -10,5 +10,6 @@ pyinstrument==4.6.0
 pytest-benchmark
 pytest-timeout
 pytest==7.4.2
+pyvis
 matplotlib
 cloudpickle
