@@ -10,7 +10,7 @@ import autosim.estimation as e
 import autosim.simulation as s
 import autosim.car as c
 from eventloop.eventloop import Event
-from helpers import kph_to_mps, measure_time, not_implemented, coalesce, indent, SmartEnum
+from helpers import kph_to_mps, measure_time, not_implemented, coalesce, indent, SmartEnum, Serializable
 from renderer import Renderer
 from simulation import Environment, Body
 from simulation.location import Circle, CircleSpace, Line
@@ -28,18 +28,39 @@ L = 500
 T_TRAINING = 60
 BOUND = (-1, 1)
 
-def get_testing_simulation_parameters(solution, renderer, strategy, no_dummy):
-    DISTANCE = 20
-    CARS_TESTED = L // DISTANCE if no_dummy else 5
+class SolutionArray(Serializable):
+    def __init__(self):
+        self.array = list[NeuralNetwork]()
+
+    def best(self):
+        b = self.array[0]
+        for s in self.array:
+            if s.fitness > b.fitness:
+                b = s
+        return b
+
+def get_testing_simulation_parameters(solutions: SolutionArray, renderer, strategy, no_dummy):
+    # DISTANCE = 20
+    # l = 200 if no_dummy else L
+    l = 200
+    CARS_TESTED = len(solutions.array) if no_dummy else 5
+    GAP = 0 if no_dummy else 1
     T_RENDER = 3 * T_TRAINING
     objects = []
-    students = [c.NCar(network=solution,
+    students = []
+    if no_dummy:
+        students = [c.NCar(network=solutions.array[i],
                        name=f"student-{i}",
-                       location = Circle(CircleSpace(L), i * L / (CARS_TESTED + 1)))
-                for i in range(CARS_TESTED)]            
+                       location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
+                for i in range(CARS_TESTED)]
+    else:
+        students = [c.NCar(network=solutions.best(),
+                        name=f"student-{i}",
+                        location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
+                    for i in range(CARS_TESTED)]            
     objects += students
     if strategy != 'const60kph' and not no_dummy:
-        dummy = DummyCar(location = Circle(CircleSpace(L), CARS_TESTED * L / (CARS_TESTED + 1)), name = 'dummy')
+        dummy = DummyCar(location = Circle(CircleSpace(l), CARS_TESTED * l / (CARS_TESTED + GAP)), name = 'dummy')
         objects += [dummy]
     objects += [renderer, NCarWatcher()]
     return s.SimulationParameters(timeout=T_RENDER, objects = objects)
@@ -157,28 +178,28 @@ def plot_fitness(path, network: NeuralNetwork):
     plt.savefig(path)
 
 @indent
-def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, population: int = None, generations: int = None, architecture_string: str = None):
+def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, population: int = None, generations: int = None, architecture_string: str = None, number = 1):
     architecture_presented = architecture_string is not None
     architecture = NetworkArchitecture.from_string(architecture_string or 'linear', 'sigm')
 
     solution_path = f"{path}\\{strategy.name}.json"
-    fitness_path = f"{path}\\{strategy.name}.jpg"
-    network_html_path = f"{path}\\{strategy.name}.html"
+    fitness_path = lambda suffix: f"{path}\\{strategy.name}-{suffix}.jpg"
+    network_html_path = lambda suffix: f"{path}\\{strategy.name}-{suffix}.html"
 
     logging.info(f"get solution for {strategy.name} strategy")
     
     solution = None
     if cont or not new:
-        solution = load(solution_path)
+        solution = lambda: load(solution_path, True)
     
-    if solution is not None and architecture_presented and solution.architecture() != architecture:
-        raise RuntimeError(f"Architecture is provided, but solution {solution} with incompatible architecture exists!")
+    if solution is not None and architecture_presented and solution().architecture() != architecture:
+        raise RuntimeError(f"Architecture is provided, but solution {solution()} with incompatible architecture exists!")
 
     if solution is not None:
-        architecture = solution.architecture()
+        architecture = solution().architecture()
     else:
         logging.info('continue with random base solution')
-        solution = random_solution(architecture)
+        solution = lambda: random_solution(architecture)
         new = True
         cont = False
     
@@ -186,27 +207,40 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
         if cont:
             logging.info(f"train solution from base: {solution_path}")
 
-        solution = train(solution, strategy, population, generations, architecture)
-
         os.makedirs(pathlib.Path(solution_path).parent, exist_ok=True)
-        solution.to_file(solution_path)
-        logging.info(f"written {strategy.name} solution to \"{solution_path}\"")
 
-        plot_fitness(fitness_path, solution)        
-        logging.info(f"saved {strategy.name} fitness plot to \"{fitness_path}\"")
+        solutions = SolutionArray()
+        for i in range(number):
+            logging.info(f"training solution {i+1}/{number}")
+            new_solution = train(solution(), strategy, population, generations, architecture)
+            solutions.array.append(new_solution)
 
-        solution.draw(network_html_path, INPUTS)
-        logging.info(f"saved {strategy.name} network graph to \"{network_html_path}\"")
+            plot_fitness(fitness_path(i), new_solution)        
+            logging.info(f"saved {strategy.name} fitness plot to \"{fitness_path(i)}\"")
 
-    return solution, pathlib.Path(solution_path).parent
+            new_solution.draw(network_html_path(i), INPUTS)
+            logging.info(f"saved {strategy.name} network graph to \"{network_html_path(i)}\"")
 
-def load(path: str):
+        solutions.to_file(solution_path)
+        logging.info(f"written {strategy.name} solutions to \"{solution_path}\"")
+
+    return solutions, pathlib.Path(solution_path).parent
+
+def load(path: str, best = False):
     if not os.path.isfile(path):
         logging.warning(f"solution file \"{path}\" is not found!")
         return None
     else:
         logging.info(f"load solution from \"{os.path.realpath(path)}\"...")
-        return NeuralNetwork.from_file(path)
+
+        try:
+            solution = SolutionArray.from_file(path)
+            logging.info(f"solution array contains {len(solution.array)} solutions")
+            if best:
+                return solution.best()
+            return solution
+        except:
+            return NeuralNetwork.from_file(path)
 
 def random_solution(architecture):
     return NeuralNetwork.from_vector(architecture, NeuralNetwork.random(architecture, BOUND).as_vector())
@@ -252,8 +286,8 @@ def estimate_population_generations(architecture: NetworkArchitecture, populatio
     return population, generations
 
 @measure_time
-def simulate(network: NeuralNetwork, renderer: Renderer, strategy: str, no_dummy: bool):
-    parameters = get_testing_simulation_parameters(network, renderer, strategy, no_dummy)
+def simulate(solutions: SolutionArray, renderer: Renderer, strategy: str, no_dummy: bool):
+    parameters = get_testing_simulation_parameters(solutions, renderer, strategy, no_dummy)
     autosim.simulate(parameters)
     logging.info( f"simulated {parameters.timeout}s ({renderer.fps * parameters.timeout} {renderer.width}x{renderer.height} frames)")
 
@@ -265,7 +299,7 @@ def render(renderer: Renderer, dir: str, name: str):
 
 def action_train(args):
     for strategy in args.strategies:
-        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations, args.architecture)
+        get_solution(strategy, args.solutions, args.new, args.cont, args.population, args.generations, args.architecture, args.number)
     action_render(args)
 
 def action_info(args):
@@ -413,6 +447,8 @@ def make_parser():
                           help='Size of population.')
     training.add_argument('-g', '--generations', default=None, type=int,
                           help='Number of generations.')
+    training.add_argument('-m', '--number', default=1, type=int,
+                           help='Number of different solutions to generate.')
 
     rendering = parser.add_argument_group('render')
     rendering.add_argument('-d', '--no-render', action='store_true', default=False,
