@@ -3,16 +3,18 @@ from dummy import DummyCar
 from functools import partial
 import autosim
 from autosim.car.ncar import NetworkArchitecture, NeuralNetwork, INPUTS
-from autosim import NCarWatcher 
+from autosim import NCarWatcher
 from autosim.nn import DenseLayerArchitecture, ActivationFunction
 import autosim.training as t
 import autosim.estimation as e
 import autosim.simulation as s
 import autosim.car as c
-from eventloop.eventloop import Event
+from dataclasses import dataclass
+from eventloop.eventloop import Event, Listener
 from helpers import kph_to_mps, measure_time, not_implemented, coalesce, indent, SmartEnum, Serializable
 from renderer import Renderer
 from simulation import Environment, Body
+from simulation.environment.events import Tick
 from simulation.location import Circle, CircleSpace, Line
 import argparse
 import matplotlib.pyplot as plt
@@ -28,6 +30,53 @@ L = 500
 T_TRAINING = 60
 BOUND = (-1, 1)
 
+class Watcher(Listener):
+
+    def __init__(self, target: c.Car):
+        self.target = target
+        self.t  = []
+        self.dx = []
+        self.dv = []
+        self.v  = []
+        self.u  = []
+
+    def input_events(self) -> set:
+        return Tick
+    
+    def accept(self, event: Event) -> list[Event]:
+        
+        assert isinstance(event, Tick)
+
+        t = self.target
+        n = t.next(event.environment)
+
+        self.dx.append(t.location.distance(n.location))
+        self.dv.append(t.v - n.v)
+        self.v.append(t.v)
+        self.u.append(t.u)
+        self.t.append(event.environment.time)
+
+    def plot(self, path, what='dx,dv,v,u'):
+        what = set(what.replace(' ', '').split(','))
+
+        plt.clf()
+        plt.title('Target trajectory over time')
+
+        if 'dx' in what:
+            plt.plot(self.t, self.dx, label='ds')
+        if 'dv' in what:
+            plt.plot(self.t, self.dv, label='dv')
+        if 'v' in what:
+            plt.plot(self.t, self.v, label='v')
+        if 'u' in what:
+            plt.plot(self.t, self.u, label='u')
+        
+        plt.legend()
+        plt.grid(which='both')
+        plt.savefig(path)
+        logging.info(f'saved watcher plot to {path}')
+
+
 class SolutionArray(Serializable):
     def __init__(self):
         self.array = list[NeuralNetwork]()
@@ -39,10 +88,10 @@ class SolutionArray(Serializable):
                 b = s
         return b
 
-def get_testing_simulation_parameters(solutions: SolutionArray, renderer, strategy, no_dummy):
+def get_testing_simulation_parameters(solutions: SolutionArray, renderer, watcher, strategy, no_dummy):
     # DISTANCE = 20
     # l = 200 if no_dummy else L
-    l = 200
+    l = 100 if no_dummy else L
     CARS_TESTED = len(solutions.array) if no_dummy else 5
     GAP = 0 if no_dummy else 1
     T_RENDER = 3 * T_TRAINING
@@ -58,11 +107,12 @@ def get_testing_simulation_parameters(solutions: SolutionArray, renderer, strate
                         name=f"student-{i}",
                         location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
                     for i in range(CARS_TESTED)]            
+    watcher.target = students[-1]
     objects += students
     if strategy != 'const60kph' and not no_dummy:
         dummy = DummyCar(location = Circle(CircleSpace(l), CARS_TESTED * l / (CARS_TESTED + GAP)), name = 'dummy')
         objects += [dummy]
-    objects += [renderer, NCarWatcher()]
+    objects += [renderer, NCarWatcher(), watcher]
     return s.SimulationParameters(timeout=T_RENDER, objects = objects)
 
 def strategy_value(func):
@@ -240,7 +290,9 @@ def load(path: str, best = False):
                 return solution.best()
             return solution
         except:
-            return NeuralNetwork.from_file(path)
+            ret = SolutionArray()
+            ret.array = [NeuralNetwork.from_file(path)]
+            return ret
 
 def random_solution(architecture):
     return NeuralNetwork.from_vector(architecture, NeuralNetwork.random(architecture, BOUND).as_vector())
@@ -286,8 +338,8 @@ def estimate_population_generations(architecture: NetworkArchitecture, populatio
     return population, generations
 
 @measure_time
-def simulate(solutions: SolutionArray, renderer: Renderer, strategy: str, no_dummy: bool):
-    parameters = get_testing_simulation_parameters(solutions, renderer, strategy, no_dummy)
+def simulate(solutions: SolutionArray, renderer: Renderer, watcher: Watcher, strategy: str, no_dummy: bool):
+    parameters = get_testing_simulation_parameters(solutions, renderer, watcher, strategy, no_dummy)
     autosim.simulate(parameters)
     logging.info( f"simulated {parameters.timeout}s ({renderer.fps * parameters.timeout} {renderer.width}x{renderer.height} frames)")
 
@@ -351,7 +403,9 @@ def action_render(args):
 
     for solution, file in zip(solutions, files):
         renderer = Renderer(args.fps, args.width, args.height, args.text)
-        simulate(solution, renderer, file.stem, args.no_dummy)
+        watcher = Watcher(None)
+        simulate(solution, renderer, watcher, file.stem, args.no_dummy)
+        watcher.plot(file.parent / (file.stem + '-watcher' + ('-no-dummy' if args.no_dummy else '') + '.jpg'))
         render(renderer, file.parent, file.stem + ('-no-dummy' if args.no_dummy else ''))
 
 def action_help(parser):
