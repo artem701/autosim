@@ -11,7 +11,7 @@ import autosim.simulation as s
 import autosim.car as c
 from dataclasses import dataclass
 from eventloop.eventloop import Event, Listener
-from helpers import kph_to_mps, measure_time, not_implemented, coalesce, indent, SmartEnum, Serializable
+from helpers import kph_to_mps, mps_to_kph, measure_time, not_implemented, coalesce, indent, SmartEnum, Serializable
 from renderer import Renderer
 from simulation import Environment, Body
 from simulation.environment.events import Tick
@@ -23,6 +23,7 @@ import os
 import pathlib
 import sys
 import warnings
+import math
 
 import logging
 
@@ -52,8 +53,8 @@ class Watcher(Listener):
 
         self.dx.append(t.location.distance(n.location))
         self.dv.append(t.v - n.v)
-        self.v.append(t.v)
-        self.u.append(t.u)
+        self.v.append(mps_to_kph(t.v))
+        self.u.append(t.u * 10)
         self.t.append(event.environment.time)
 
     def plot(self, path, what='dx,dv,v,u'):
@@ -76,10 +77,12 @@ class Watcher(Listener):
         plt.savefig(path)
         logging.info(f'saved watcher plot to {path}')
 
-
 class SolutionArray(Serializable):
     def __init__(self):
         self.array = list[NeuralNetwork]()
+
+    def count(self):
+        return len(self.array)
 
     def best(self):
         b = self.array[0]
@@ -88,18 +91,23 @@ class SolutionArray(Serializable):
                 b = s
         return b
 
-def get_testing_simulation_parameters(solutions: SolutionArray, renderer, watcher, strategy, no_dummy):
+def get_testing_simulation_parameters(solutions: SolutionArray, renderer, watcher, strategy, args):
     # DISTANCE = 20
-    # l = 200 if no_dummy else L
-    l = 100 if no_dummy else L
-    CARS_TESTED = len(solutions.array) if no_dummy else 5
-    GAP = 0 if no_dummy else 1
+    l = args.circle_length
+    # l = L
+    indexes = list(range(solutions.count())) * math.ceil(args.number / solutions.count())
+    np.random.RandomState(args.random_state).shuffle(indexes)
+    indexes = indexes[:args.number]
+
+    # CARS_TESTED = len(solutions.array) if args.no_dummy else 5
+    CARS_TESTED = args.number
+    GAP = 0 if args.no_dummy else 1
     T_RENDER = 3 * T_TRAINING
     objects = []
     students = []
-    if no_dummy:
-        students = [c.NCar(network=solutions.array[i],
-                       name=f"student-{i}",
+    if args.no_dummy:
+        students = [c.NCar(network=solutions.array[indexes[i]],
+                       name=f"student-{indexes[i]}",
                        location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
                 for i in range(CARS_TESTED)]
     else:
@@ -109,7 +117,7 @@ def get_testing_simulation_parameters(solutions: SolutionArray, renderer, watche
                     for i in range(CARS_TESTED)]            
     watcher.target = students[-1]
     objects += students
-    if strategy != 'const60kph' and not no_dummy:
+    if strategy != 'const60kph' and not args.no_dummy:
         dummy = DummyCar(location = Circle(CircleSpace(l), CARS_TESTED * l / (CARS_TESTED + GAP)), name = 'dummy')
         objects += [dummy]
     objects += [renderer, NCarWatcher(), watcher]
@@ -242,10 +250,10 @@ def get_solution(strategy: Strategy, path: str, new: bool, cont: bool, populatio
     if cont or not new:
         solution = lambda: load(solution_path, True)
     
-    if solution is not None and architecture_presented and solution().architecture() != architecture:
+    if solution is not None and architecture_presented and solution() is not None and solution().architecture() != architecture:
         raise RuntimeError(f"Architecture is provided, but solution {solution()} with incompatible architecture exists!")
 
-    if solution is not None:
+    if solution is not None and solution() is not None:
         architecture = solution().architecture()
     else:
         logging.info('continue with random base solution')
@@ -338,8 +346,8 @@ def estimate_population_generations(architecture: NetworkArchitecture, populatio
     return population, generations
 
 @measure_time
-def simulate(solutions: SolutionArray, renderer: Renderer, watcher: Watcher, strategy: str, no_dummy: bool):
-    parameters = get_testing_simulation_parameters(solutions, renderer, watcher, strategy, no_dummy)
+def simulate(solutions: SolutionArray, renderer: Renderer, watcher: Watcher, strategy: str, args):
+    parameters = get_testing_simulation_parameters(solutions, renderer, watcher, strategy, args)
     autosim.simulate(parameters)
     logging.info( f"simulated {parameters.timeout}s ({renderer.fps * parameters.timeout} {renderer.width}x{renderer.height} frames)")
 
@@ -404,7 +412,7 @@ def action_render(args):
     for solution, file in zip(solutions, files):
         renderer = Renderer(args.fps, args.width, args.height, args.text)
         watcher = Watcher(None)
-        simulate(solution, renderer, watcher, file.stem, args.no_dummy)
+        simulate(solution, renderer, watcher, file.stem, args)
         watcher.plot(file.parent / (file.stem + '-watcher' + ('-no-dummy' if args.no_dummy else '') + '.jpg'))
         render(renderer, file.parent, file.stem + ('-no-dummy' if args.no_dummy else ''))
 
@@ -481,6 +489,8 @@ def make_parser():
 
     parser.add_argument('-h', '--help', action='store_true', default=False,
                         help='Show this help message and exit.')
+    parser.add_argument('-r', '--random-state', type=int, default=None,
+                        help='Set random state for some operations.')
 
     training = parser.add_argument_group('train')
     training.add_argument('-a', '--architecture', default=None,
@@ -517,6 +527,8 @@ def make_parser():
                            help='Rendered text. Available options: n,x,u,vms,vkh.')
     rendering.add_argument('--no-dummy', default=False, action='store_true',
                            help='Do not use dummy for simulations.')
+    rendering.add_argument('--circle-length', default=500, type=int,
+                           help='Length of a circle to render on.')
 
     other = parser.add_argument_group('other')
     other.add_argument('-l', '--log-level', default='info',
