@@ -215,7 +215,9 @@ class Renderer(Listener):
     def draw_circle(self, canvas):
         cx, cy, r = self.circle()
         cv2.circle(canvas, (cx, cy), r, (0, 0, 0), 2)
-        self.print(canvas, 1, self.height - 2, f"R = {r:.2f}m")
+        if self.space:
+            assert isinstance(self.space, CircleSpace)
+            self.print(canvas, 1, self.height - 2, f"R = {self.space.length()/2/math.pi:.2f}m")
 
 
     def print(self, canvas, x, y, text):
