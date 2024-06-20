@@ -98,6 +98,7 @@ def get_testing_simulation_parameters(solutions: SolutionArray, renderer, watche
     indexes = list(range(solutions.count())) * math.ceil(args.number / solutions.count())
     np.random.RandomState(args.random_state).shuffle(indexes)
     indexes = indexes[:args.number]
+    v = kph_to_mps(args.start_speed)
 
     # CARS_TESTED = len(solutions.array) if args.no_dummy else 5
     CARS_TESTED = args.number
@@ -105,16 +106,17 @@ def get_testing_simulation_parameters(solutions: SolutionArray, renderer, watche
     T_RENDER = 3 * T_TRAINING
     objects = []
     students = []
-    if args.no_dummy:
-        students = [c.NCar(network=solutions.array[indexes[i]],
-                       name=f"student-{indexes[i]}",
-                       location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
-                for i in range(CARS_TESTED)]
-    else:
-        students = [c.NCar(network=solutions.best(),
-                        name=f"student-{i}",
+    for i in range(CARS_TESTED):
+        if args.no_dummy:
+            student = c.NCar(network=solutions.array[indexes[i]],
+                        name=f"student-{indexes[i]}",
                         location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
-                    for i in range(CARS_TESTED)]            
+        else:
+            student = c.NCar(network=solutions.best(),
+                            name=f"student-{i}",
+                            location = Circle(CircleSpace(l), i * l / (CARS_TESTED + GAP)))
+        student.v = v
+        students.append(student)
     watcher.target = students[-1]
     objects += students
     if strategy != 'const60kph' and not args.no_dummy:
@@ -216,11 +218,36 @@ def get_speedy_training_strategy():
                         ),
         ]
 
+@strategy_value
+def get_speedy_no_distance_hint_training_strategy():
+    estimation_strategy = e.EstimationStrategy(
+        collision=e.Criteria(10000),
+        speed=e.MoreCriteria(fine=0.001, reference=60)
+        )
+    return [
+        # learn to stop
+        t.TrainingSuite(estimation=estimation_strategy,
+                        simulation=s.SimulationParameters(
+                            timeout=T_TRAINING,
+                            objects=[c.ACar('0', c.ACar.Mode.MOVEMENT, location=Line(L), name='trainer')]
+                            )
+                        ),
+
+        # follow constantly moving target
+        t.TrainingSuite(estimation=estimation_strategy,
+                        simulation=s.SimulationParameters(
+                            timeout=T_TRAINING,
+                            objects=[c.ACar(f"{kph_to_mps(50)} * dt", c.ACar.Mode.MOVEMENT, location=Line(100), name='trainer')]
+                            )
+                        ),
+        ]
+
 class Strategy(SmartEnum):
     null = partial(get_null_training_strategy)
     cautious = partial(get_cautious_training_strategy)
     speedy = partial(get_speedy_training_strategy)
     const60kph = partial(get_const60kph_training_strategy)
+    speedy_no_distance_hint = partial(get_speedy_no_distance_hint_training_strategy)
 
 def plot_fitness(path, network: NeuralNetwork):
     fitness_min = [1 / fitness for fitness in network.fitness]
@@ -529,6 +556,8 @@ def make_parser():
                            help='Do not use dummy for simulations.')
     rendering.add_argument('--circle-length', default=500, type=int,
                            help='Length of a circle to render on.')
+    rendering.add_argument('--start-speed', default=0, type=int,
+                           help='Start speed of cars when rendering. kph.')
 
     other = parser.add_argument_group('other')
     other.add_argument('-l', '--log-level', default='info',
